@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データインポート - UNS Visa Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s;
+        }
+        .drop-zone.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .drop-zone:hover {
+            border-color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-slate-800 text-white p-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="flex items-center gap-2 hover:opacity-80">
+                    <span class="text-2xl">🇯🇵</span>
+                    <span class="font-bold">UNS Visa System</span>
+                </a>
+                <span class="text-slate-400">|</span>
+                <span class="text-blue-300">データインポート</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="employees.html" class="text-slate-300 hover:text-white">従業員一覧</a>
+                <button onclick="logout()" class="text-sm text-slate-400 hover:text-white">ログアウト</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">📤 データインポート</h1>
+            <p class="text-slate-500">派遣先（JSON）と従業員（Excel）のデータをインポート</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-6">
+            <button onclick="showTab('haken-saki')" id="tab-haken-saki" 
+                    class="px-6 py-3 rounded-t-lg font-medium transition-colors bg-white text-blue-600 border-b-2 border-blue-600">
+                🏭 派遣先 (JSON)
+            </button>
+            <button onclick="showTab('employees')" id="tab-employees"
+                    class="px-6 py-3 rounded-t-lg font-medium transition-colors bg-slate-200 text-slate-600 hover:bg-slate-300">
+                👥 従業員 (Excel)
+            </button>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- TAB 1: 派遣先 (JSON) -->
+        <!-- ============================================ -->
+        <div id="panel-haken-saki" class="bg-white rounded-xl shadow-sm p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Upload -->
+                <div>
+                    <h3 class="font-bold text-lg mb-4">📁 JSONファイルをアップロード</h3>
+                    
+                    <!-- Drop Zone -->
+                    <div id="drop-zone-json" class="drop-zone rounded-xl p-8 text-center cursor-pointer"
+                         onclick="document.getElementById('json-file').click()">
+                        <div class="text-5xl mb-4">📋</div>
+                        <p class="text-slate-600 mb-2">JSONファイルをドラッグ＆ドロップ</p>
+                        <p class="text-slate-400 text-sm">または クリックして選択</p>
+                        <input type="file" id="json-file" accept=".json" class="hidden" onchange="handleJsonFile(this.files[0])">
+                    </div>
+
+                    <!-- Sample Format -->
+                    <div class="mt-4 p-4 bg-slate-50 rounded-lg">
+                        <p class="text-sm font-medium text-slate-600 mb-2">📝 JSONフォーマット例:</p>
+                        <pre class="text-xs bg-slate-800 text-green-400 p-3 rounded overflow-x-auto"><code id="json-sample">[
+  {
+    "company_name": "株式会社ABC製作所",
+    "company_name_kana": "カブシキガイシャエービーシーセイサクジョ",
+    "branch_name": "本社工場",
+    "corporation_number": "1234567890123",
+    "employment_insurance_number": "12345678901",
+    "postal_code": "480-0000",
+    "prefecture": "愛知県",
+    "city": "春日井市",
+    "address_line1": "○○町1-2-3",
+    "full_address": "愛知県春日井市○○町1-2-3",
+    "telephone": "0568-00-0000",
+    "fax": "0568-00-0001",
+    "contact_person": "田中太郎",
+    "contact_email": "<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a0d4c1cec1cbc1e0c1c2c38ec3cf8ecad0">[email&#160;protected]</a>",
+    "capital": 50000000,
+    "annual_sales": 500000000,
+    "total_employees": 200,
+    "foreign_employees": 30,
+    "business_type_code": "29",
+    "business_type_name": "製造業"
+  }
+]</code></pre>
+                        <button onclick="downloadSampleJson()" class="mt-2 text-blue-600 text-sm hover:underline">
+                            📥 サンプルJSONをダウンロード
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Preview -->
+                <div>
+                    <h3 class="font-bold text-lg mb-4">👁️ プレビュー</h3>
+                    <div id="json-preview" class="border rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto bg-slate-50">
+                        <p class="text-slate-400 text-center py-8">ファイルを選択してください</p>
+                    </div>
+                    
+                    <!-- Validation Status -->
+                    <div id="json-validation" class="mt-4 hidden">
+                        <div class="flex items-center gap-2 p-3 rounded-lg" id="json-validation-box">
+                            <span id="json-validation-icon"></span>
+                            <span id="json-validation-text"></span>
+                        </div>
+                    </div>
+
+                    <!-- Import Button -->
+                    <div class="mt-4 flex gap-3">
+                        <button id="btn-import-json" onclick="importHakenSaki()" disabled
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            📥 インポート実行
+                        </button>
+                        <button onclick="clearJsonPreview()" class="px-4 py-3 border rounded-lg hover:bg-slate-50">
+                            クリア
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Results -->
+            <div id="json-results" class="hidden mt-6 border-t pt-6">
+                <h3 class="font-bold text-lg mb-4">📊 インポート結果</h3>
+                <div id="json-results-content"></div>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- TAB 2: 従業員 (Excel) -->
+        <!-- ============================================ -->
+        <div id="panel-employees" class="bg-white rounded-xl shadow-sm p-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Upload -->
+                <div>
+                    <h3 class="font-bold text-lg mb-4">📁 Excelファイルをアップロード</h3>
+                    
+                    <!-- Drop Zone -->
+                    <div id="drop-zone-excel" class="drop-zone rounded-xl p-8 text-center cursor-pointer"
+                         onclick="document.getElementById('excel-file').click()">
+                        <div class="text-5xl mb-4">📊</div>
+                        <p class="text-slate-600 mb-2">Excel (.xlsx, .xls) をドラッグ＆ドロップ</p>
+                        <p class="text-slate-400 text-sm">または クリックして選択</p>
+                        <input type="file" id="excel-file" accept=".xlsx,.xls,.xlsm" class="hidden" onchange="handleExcelFile(this.files[0])">
+                    </div>
+
+                    <!-- Column Mapping -->
+                    <div class="mt-4 p-4 bg-slate-50 rounded-lg">
+                        <p class="text-sm font-medium text-slate-600 mb-2">📝 必須列 (Excel):</p>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-500">*</span>
+                                <span>姓 / family_name / 氏</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-500">*</span>
+                                <span>名 / given_name / 名前</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-500">*</span>
+                                <span>国籍 / nationality</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-500">*</span>
+                                <span>生年月日 / date_of_birth</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-500">*</span>
+                                <span>性別 / sex</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-500">*</span>
+                                <span>パスポート番号</span>
+                            </div>
+                        </div>
+                        <button onclick="downloadSampleExcel()" class="mt-3 text-blue-600 text-sm hover:underline">
+                            📥 サンプルExcelをダウンロード
+                        </button>
+                    </div>
+
+                    <!-- Sheet Selection -->
+                    <div id="sheet-selector" class="mt-4 hidden">
+                        <label class="block text-sm font-medium text-slate-600 mb-2">シートを選択:</label>
+                        <select id="sheet-select" class="w-full border rounded-lg px-3 py-2" onchange="selectSheet()">
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Right: Preview -->
+                <div>
+                    <h3 class="font-bold text-lg mb-4">👁️ プレビュー <span id="excel-count" class="text-sm font-normal text-slate-500"></span></h3>
+                    <div id="excel-preview" class="border rounded-lg min-h-[300px] max-h-[500px] overflow-auto bg-slate-50">
+                        <p class="text-slate-400 text-center py-8">ファイルを選択してください</p>
+                    </div>
+                    
+                    <!-- Validation Status -->
+                    <div id="excel-validation" class="mt-4 hidden">
+                        <div class="flex items-center gap-2 p-3 rounded-lg" id="excel-validation-box">
+                            <span id="excel-validation-icon"></span>
+                            <span id="excel-validation-text"></span>
+                        </div>
+                    </div>
+
+                    <!-- Column Mapping (if needed) -->
+                    <div id="column-mapping" class="mt-4 hidden">
+                        <p class="text-sm font-medium text-slate-600 mb-2">列マッピング確認:</p>
+                        <div id="column-mapping-content" class="grid grid-cols-2 gap-2 text-sm"></div>
+                    </div>
+
+                    <!-- Import Button -->
+                    <div class="mt-4 flex gap-3">
+                        <button id="btn-import-excel" onclick="importEmployees()" disabled
+                                class="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            📥 インポート実行
+                        </button>
+                        <button onclick="clearExcelPreview()" class="px-4 py-3 border rounded-lg hover:bg-slate-50">
+                            クリア
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Results -->
+            <div id="excel-results" class="hidden mt-6 border-t pt-6">
+                <h3 class="font-bold text-lg mb-4">📊 インポート結果</h3>
+                <div id="excel-results-content"></div>
+            </div>
+        </div>
+
+        <!-- Progress Modal -->
+        <div id="progress-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+                <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 class="text-lg font-bold mb-2">インポート中...</h3>
+                <p id="progress-text" class="text-slate-500">データを処理しています</p>
+                <div class="mt-4 bg-slate-200 rounded-full h-2">
+                    <div id="progress-bar" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+                <p id="progress-count" class="text-sm text-slate-400 mt-2">0 / 0</p>
+            </div>
+        </div>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        const API_BASE = '/api';
+        let jsonData = null;
+        let excelData = null;
+        let workbook = null;
+
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
+        function showTab(tab) {
+            const tabs = ['haken-saki', 'employees'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).className = t === tab 
+                    ? 'px-6 py-3 rounded-t-lg font-medium transition-colors bg-white text-blue-600 border-b-2 border-blue-600'
+                    : 'px-6 py-3 rounded-t-lg font-medium transition-colors bg-slate-200 text-slate-600 hover:bg-slate-300';
+                document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+            });
+        }
+
+        // ============================================
+        // DRAG & DROP
+        // ============================================
+        function setupDropZone(elementId, handler) {
+            const zone = document.getElementById(elementId);
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+                zone.addEventListener(event, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+
+            ['dragenter', 'dragover'].forEach(event => {
+                zone.addEventListener(event, () => zone.classList.add('dragover'));
+            });
+
+            ['dragleave', 'drop'].forEach(event => {
+                zone.addEventListener(event, () => zone.classList.remove('dragover'));
+            });
+
+            zone.addEventListener('drop', e => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) handler(files[0]);
+            });
+        }
+
+        // ============================================
+        // JSON HANDLING (派遣先)
+        // ============================================
+        function handleJsonFile(file) {
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    jsonData = JSON.parse(e.target.result);
+                    
+                    // Ensure array
+                    if (!Array.isArray(jsonData)) {
+                        jsonData = [jsonData];
+                    }
+                    
+                    displayJsonPreview(jsonData);
+                    validateJsonData(jsonData);
+                } catch (error) {
+                    showJsonError('JSONの解析に失敗しました: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function displayJsonPreview(data) {
+            const preview = document.getElementById('json-preview');
+            
+            if (data.length === 0) {
+                preview.innerHTML = '<p class="text-slate-400 text-center py-8">データがありません</p>';
+                return;
+            }
+
+            let html = `<p class="text-sm text-slate-500 mb-3">${data.length} 件の派遣先データ</p>`;
+            html += '<div class="space-y-3">';
+            
+            data.forEach((item, index) => {
+                html += `
+                    <div class="border rounded-lg p-3 bg-white">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs text-slate-400">#${index + 1}</span>
+                                <h4 class="font-bold text-slate-800">${item.company_name || '名称なし'}</h4>
+                                ${item.branch_name ? `<p class="text-sm text-slate-500">${item.branch_name}</p>` : ''}
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded ${item._valid !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${item._valid !== false ? '✓ OK' : '⚠ エラー'}
+                            </span>
+                        </div>
+                        <div class="mt-2 text-sm text-slate-600 grid grid-cols-2 gap-1">
+                            <div>📍 ${item.full_address || item.prefecture + item.city || '-'}</div>
+                            <div>📞 ${item.telephone || '-'}</div>
+                            <div>🔢 法人番号: ${item.corporation_number || '-'}</div>
+                            <div>👥 従業員: ${item.total_employees || '-'}名</div>
+                        </div>
+                        ${item._errors ? `<div class="mt-2 text-xs text-red-500">${item._errors.join(', ')}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            preview.innerHTML = html;
+        }
+
+        function validateJsonData(data) {
+            const validation = document.getElementById('json-validation');
+            const box = document.getElementById('json-validation-box');
+            const icon = document.getElementById('json-validation-icon');
+            const text = document.getElementById('json-validation-text');
+            
+            let errors = 0;
+            let warnings = 0;
+
+            data.forEach(item => {
+                item._errors = [];
+                item._valid = true;
+
+                // Required fields
+                if (!item.company_name) {
+                    item._errors.push('会社名が必要です');
+                    item._valid = false;
+                }
+
+                // Validate corporation number
+                if (item.corporation_number && !/^\d{13}$/.test(item.corporation_number)) {
+                    item._errors.push('法人番号は13桁');
+                    item._valid = false;
+                }
+
+                // Validate insurance number
+                if (item.employment_insurance_number && !/^\d{11}$/.test(item.employment_insurance_number.replace(/-/g, ''))) {
+                    item._errors.push('雇用保険番号は11桁');
+                    item._valid = false;
+                }
+
+                if (!item._valid) errors++;
+            });
+
+            validation.classList.remove('hidden');
+
+            if (errors === 0) {
+                box.className = 'flex items-center gap-2 p-3 rounded-lg bg-green-100';
+                icon.textContent = '✅';
+                text.textContent = `${data.length} 件すべて有効です`;
+                text.className = 'text-green-700';
+                document.getElementById('btn-import-json').disabled = false;
+            } else {
+                box.className = 'flex items-center gap-2 p-3 rounded-lg bg-red-100';
+                icon.textContent = '❌';
+                text.textContent = `${errors} 件のエラーがあります`;
+                text.className = 'text-red-700';
+                document.getElementById('btn-import-json').disabled = false; // Allow partial import
+            }
+
+            displayJsonPreview(data);
+        }
+
+        function showJsonError(message) {
+            const preview = document.getElementById('json-preview');
+            preview.innerHTML = `<div class="text-red-500 text-center py-8">❌ ${message}</div>`;
+            document.getElementById('btn-import-json').disabled = true;
+        }
+
+        function clearJsonPreview() {
+            jsonData = null;
+            document.getElementById('json-file').value = '';
+            document.getElementById('json-preview').innerHTML = '<p class="text-slate-400 text-center py-8">ファイルを選択してください</p>';
+            document.getElementById('json-validation').classList.add('hidden');
+            document.getElementById('json-results').classList.add('hidden');
+            document.getElementById('btn-import-json').disabled = true;
+        }
+
+        async function importHakenSaki() {
+            if (!jsonData || jsonData.length === 0) return;
+
+            const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            showProgress(jsonData.length);
+
+            const results = { success: 0, failed: 0, errors: [] };
+
+            for (let i = 0; i < jsonData.length; i++) {
+                const item = jsonData[i];
+                updateProgress(i + 1, jsonData.length, item.company_name);
+
+                if (item._valid === false) {
+                    results.failed++;
+                    results.errors.push({ name: item.company_name, error: item._errors.join(', ') });
+                    continue;
+                }
+
+                try {
+                    // Remove validation fields
+                    const cleanData = { ...item };
+                    delete cleanData._valid;
+                    delete cleanData._errors;
+
+                    const response = await fetch(`${API_BASE}/haken-saki`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(cleanData)
+                    });
+
+                    if (response.ok) {
+                        results.success++;
+                    } else {
+                        const error = await response.json();
+                        results.failed++;
+                        results.errors.push({ name: item.company_name, error: error.detail || 'Unknown error' });
+                    }
+                } catch (error) {
+                    results.failed++;
+                    results.errors.push({ name: item.company_name, error: error.message });
+                }
+            }
+
+            hideProgress();
+            showJsonResults(results);
+        }
+
+        function showJsonResults(results) {
+            const container = document.getElementById('json-results');
+            const content = document.getElementById('json-results-content');
+            
+            let html = `
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-green-100 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-green-700">${results.success}</div>
+                        <div class="text-sm text-green-600">成功</div>
+                    </div>
+                    <div class="bg-red-100 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-red-700">${results.failed}</div>
+                        <div class="text-sm text-red-600">失敗</div>
+                    </div>
+                </div>
+            `;
+
+            if (results.errors.length > 0) {
+                html += '<div class="border rounded-lg p-4 bg-red-50">';
+                html += '<p class="font-medium text-red-700 mb-2">エラー詳細:</p>';
+                html += '<ul class="text-sm text-red-600 space-y-1">';
+                results.errors.forEach(err => {
+                    html += `<li>• ${err.name}: ${err.error}</li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            content.innerHTML = html;
+            container.classList.remove('hidden');
+        }
+
+        // ============================================
+        // EXCEL HANDLING (従業員)
+        // ============================================
+        function handleExcelFile(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    workbook = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+                    
+                    // Show sheet selector if multiple sheets
+                    const sheetNames = workbook.SheetNames;
+                    if (sheetNames.length > 1) {
+                        const selector = document.getElementById('sheet-selector');
+                        const select = document.getElementById('sheet-select');
+                        select.innerHTML = sheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+                        selector.classList.remove('hidden');
+                    }
+                    
+                    // Parse first sheet
+                    parseExcelSheet(sheetNames[0]);
+                } catch (error) {
+                    showExcelError('Excelの解析に失敗しました: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function selectSheet() {
+            const sheetName = document.getElementById('sheet-select').value;
+            parseExcelSheet(sheetName);
+        }
+
+        function parseExcelSheet(sheetName) {
+            const sheet = workbook.Sheets[sheetName];
+            const rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            
+            if (rawData.length === 0) {
+                showExcelError('シートにデータがありません');
+                return;
+            }
+
+            // Map columns
+            excelData = rawData.map((row, index) => mapExcelRow(row, index));
+            
+            displayExcelPreview(excelData);
+            validateExcelData(excelData);
+        }
+
+        function mapExcelRow(row, index) {
+            // Column mapping (Japanese -> English)
+            const mapping = {
+                // Family name
+                '姓': 'family_name', '氏': 'family_name', 'family_name': 'family_name', 
+                '姓（ローマ字）': 'family_name', 'FAMILY NAME': 'family_name',
+                
+                // Given name
+                '名': 'given_name', '名前': 'given_name', 'given_name': 'given_name',
+                '名（ローマ字）': 'given_name', 'GIVEN NAME': 'given_name',
+                
+                // Kanji name
+                '漢字氏名': 'name_kanji', '氏名（漢字）': 'name_kanji',
+                
+                // Nationality
+                '国籍': 'nationality', 'nationality': 'nationality', '国': 'nationality',
+                
+                // Date of birth
+                '生年月日': 'date_of_birth', 'date_of_birth': 'date_of_birth', '誕生日': 'date_of_birth',
+                
+                // Sex
+                '性別': 'sex', 'sex': 'sex', 'gender': 'sex',
+                
+                // Passport
+                'パスポート番号': 'passport_number', '旅券番号': 'passport_number', 'passport_number': 'passport_number',
+                'パスポート有効期限': 'passport_expiration', '旅券有効期限': 'passport_expiration',
+                
+                // Visa
+                '在留資格': 'current_visa_status', 'visa_status': 'current_visa_status',
+                '在留期間': 'current_period_of_stay', 'period_of_stay': 'current_period_of_stay',
+                '在留期限': 'current_expiration_date', '期限': 'current_expiration_date', 'expiration_date': 'current_expiration_date',
+                '在留カード番号': 'residence_card_number', 'residence_card': 'residence_card_number',
+                
+                // Contact
+                '住所': 'address_japan', 'address': 'address_japan',
+                '電話番号': 'telephone_japan', '電話': 'telephone_japan', 'phone': 'telephone_japan',
+                '携帯電話': 'cellular_phone', '携帯': 'cellular_phone', 'mobile': 'cellular_phone',
+                'メール': 'email', 'email': 'email', 'Eメール': 'email',
+                
+                // Additional
+                '社員番号': 'employee_code', 'employee_code': 'employee_code',
+                '入社日': 'hire_date', 'hire_date': 'hire_date'
+            };
+
+            const mapped = { _row: index + 2, _errors: [], _valid: true }; // +2 for header and 0-index
+
+            Object.keys(row).forEach(key => {
+                const cleanKey = key.trim();
+                const mappedKey = mapping[cleanKey] || mapping[cleanKey.toLowerCase()];
+                if (mappedKey) {
+                    let value = row[key];
+                    
+                    // Handle dates
+                    if (value instanceof Date) {
+                        value = value.toISOString().split('T')[0];
+                    }
+                    
+                    // Handle sex
+                    if (mappedKey === 'sex') {
+                        if (['男', '男性', 'male', 'M', '1'].includes(String(value).trim())) {
+                            value = 'male';
+                        } else if (['女', '女性', 'female', 'F', '2'].includes(String(value).trim())) {
+                            value = 'female';
+                        }
+                    }
+                    
+                    mapped[mappedKey] = String(value).trim();
+                }
+            });
+
+            return mapped;
+        }
+
+        function displayExcelPreview(data) {
+            const preview = document.getElementById('excel-preview');
+            document.getElementById('excel-count').textContent = `(${data.length} 件)`;
+
+            if (data.length === 0) {
+                preview.innerHTML = '<p class="text-slate-400 text-center py-8">データがありません</p>';
+                return;
+            }
+
+            let html = '<table class="w-full text-sm"><thead class="bg-slate-100 sticky top-0"><tr>';
+            html += '<th class="px-2 py-1 text-left">行</th>';
+            html += '<th class="px-2 py-1 text-left">氏名</th>';
+            html += '<th class="px-2 py-1 text-left">国籍</th>';
+            html += '<th class="px-2 py-1 text-left">在留期限</th>';
+            html += '<th class="px-2 py-1 text-left">在留カード</th>';
+            html += '<th class="px-2 py-1 text-center">状態</th>';
+            html += '</tr></thead><tbody>';
+
+            data.slice(0, 100).forEach(item => {
+                const statusClass = item._valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+                html += `<tr class="border-b hover:bg-slate-50">
+                    <td class="px-2 py-1 text-slate-400">${item._row}</td>
+                    <td class="px-2 py-1 font-medium">${item.family_name || ''} ${item.given_name || ''}</td>
+                    <td class="px-2 py-1">${item.nationality || '-'}</td>
+                    <td class="px-2 py-1">${item.current_expiration_date || '-'}</td>
+                    <td class="px-2 py-1 font-mono">${item.residence_card_number || '-'}</td>
+                    <td class="px-2 py-1 text-center">
+                        <span class="text-xs px-2 py-0.5 rounded ${statusClass}">
+                            ${item._valid ? '✓' : '⚠'}
+                        </span>
+                    </td>
+                </tr>`;
+                if (item._errors.length > 0) {
+                    html += `<tr class="bg-red-50"><td colspan="6" class="px-2 py-1 text-xs text-red-600">
+                        ${item._errors.join(', ')}
+                    </td></tr>`;
+                }
+            });
+
+            if (data.length > 100) {
+                html += `<tr><td colspan="6" class="px-2 py-2 text-center text-slate-400">
+                    ...他 ${data.length - 100} 件
+                </td></tr>`;
+            }
+
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+        }
+
+        function validateExcelData(data) {
+            const validation = document.getElementById('excel-validation');
+            const box = document.getElementById('excel-validation-box');
+            const icon = document.getElementById('excel-validation-icon');
+            const text = document.getElementById('excel-validation-text');
+
+            let errors = 0;
+
+            data.forEach(item => {
+                item._errors = [];
+                item._valid = true;
+
+                // Required fields
+                if (!item.family_name) {
+                    item._errors.push('姓が必要');
+                    item._valid = false;
+                }
+                if (!item.given_name) {
+                    item._errors.push('名が必要');
+                    item._valid = false;
+                }
+                if (!item.nationality) {
+                    item._errors.push('国籍が必要');
+                    item._valid = false;
+                }
+                if (!item.date_of_birth) {
+                    item._errors.push('生年月日が必要');
+                    item._valid = false;
+                }
+                if (!item.sex) {
+                    item._errors.push('性別が必要');
+                    item._valid = false;
+                }
+                if (!item.passport_number) {
+                    item._errors.push('パスポート番号が必要');
+                    item._valid = false;
+                }
+
+                // Validate residence card format
+                if (item.residence_card_number && !/^[A-Z]{2}\d{8}[A-Z]{2}$/i.test(item.residence_card_number)) {
+                    item._errors.push('在留カード番号の形式が無効');
+                    item._valid = false;
+                }
+
+                if (!item._valid) errors++;
+            });
+
+            validation.classList.remove('hidden');
+
+            const valid = data.length - errors;
+            if (errors === 0) {
+                box.className = 'flex items-center gap-2 p-3 rounded-lg bg-green-100';
+                icon.textContent = '✅';
+                text.textContent = `${data.length} 件すべて有効です`;
+                text.className = 'text-green-700';
+            } else {
+                box.className = 'flex items-center gap-2 p-3 rounded-lg bg-yellow-100';
+                icon.textContent = '⚠️';
+                text.textContent = `${valid} 件有効 / ${errors} 件エラー`;
+                text.className = 'text-yellow-700';
+            }
+
+            document.getElementById('btn-import-excel').disabled = valid === 0;
+            displayExcelPreview(data);
+        }
+
+        function showExcelError(message) {
+            document.getElementById('excel-preview').innerHTML = `<div class="text-red-500 text-center py-8">❌ ${message}</div>`;
+            document.getElementById('btn-import-excel').disabled = true;
+        }
+
+        function clearExcelPreview() {
+            excelData = null;
+            workbook = null;
+            document.getElementById('excel-file').value = '';
+            document.getElementById('excel-preview').innerHTML = '<p class="text-slate-400 text-center py-8">ファイルを選択してください</p>';
+            document.getElementById('excel-validation').classList.add('hidden');
+            document.getElementById('excel-results').classList.add('hidden');
+            document.getElementById('sheet-selector').classList.add('hidden');
+            document.getElementById('excel-count').textContent = '';
+            document.getElementById('btn-import-excel').disabled = true;
+        }
+
+        async function importEmployees() {
+            if (!excelData || excelData.length === 0) return;
+
+            const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const validData = excelData.filter(item => item._valid);
+            showProgress(validData.length);
+
+            const results = { success: 0, failed: 0, errors: [] };
+
+            for (let i = 0; i < validData.length; i++) {
+                const item = validData[i];
+                updateProgress(i + 1, validData.length, `${item.family_name} ${item.given_name}`);
+
+                try {
+                    // Clean data
+                    const cleanData = { ...item };
+                    delete cleanData._row;
+                    delete cleanData._valid;
+                    delete cleanData._errors;
+
+                    // Ensure uppercase for names and card numbers
+                    if (cleanData.family_name) cleanData.family_name = cleanData.family_name.toUpperCase();
+                    if (cleanData.given_name) cleanData.given_name = cleanData.given_name.toUpperCase();
+                    if (cleanData.residence_card_number) cleanData.residence_card_number = cleanData.residence_card_number.toUpperCase();
+                    if (cleanData.passport_number) cleanData.passport_number = cleanData.passport_number.toUpperCase();
+
+                    const response = await fetch(`${API_BASE}/employees`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(cleanData)
+                    });
+
+                    if (response.ok) {
+                        results.success++;
+                    } else {
+                        const error = await response.json();
+                        results.failed++;
+                        results.errors.push({ 
+                            row: item._row, 
+                            name: `${item.family_name} ${item.given_name}`,
+                            error: error.detail || 'Unknown error' 
+                        });
+                    }
+                } catch (error) {
+                    results.failed++;
+                    results.errors.push({ 
+                        row: item._row,
+                        name: `${item.family_name} ${item.given_name}`,
+                        error: error.message 
+                    });
+                }
+            }
+
+            hideProgress();
+            showExcelResults(results, excelData.length - validData.length);
+        }
+
+        function showExcelResults(results, skipped) {
+            const container = document.getElementById('excel-results');
+            const content = document.getElementById('excel-results-content');
+            
+            let html = `
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-green-100 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-green-700">${results.success}</div>
+                        <div class="text-sm text-green-600">成功</div>
+                    </div>
+                    <div class="bg-red-100 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-red-700">${results.failed}</div>
+                        <div class="text-sm text-red-600">失敗</div>
+                    </div>
+                    <div class="bg-slate-100 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-slate-700">${skipped}</div>
+                        <div class="text-sm text-slate-600">スキップ</div>
+                    </div>
+                </div>
+            `;
+
+            if (results.errors.length > 0) {
+                html += '<div class="border rounded-lg p-4 bg-red-50 max-h-60 overflow-auto">';
+                html += '<p class="font-medium text-red-700 mb-2">エラー詳細:</p>';
+                html += '<ul class="text-sm text-red-600 space-y-1">';
+                results.errors.forEach(err => {
+                    html += `<li>• 行${err.row}: ${err.name} - ${err.error}</li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            if (results.success > 0) {
+                html += `
+                    <div class="mt-4 flex gap-3">
+                        <a href="employees.html" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium text-center transition-colors">
+                            従業員一覧を確認 →
+                        </a>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+            container.classList.remove('hidden');
+        }
+
+        // ============================================
+        // PROGRESS MODAL
+        // ============================================
+        function showProgress(total) {
+            document.getElementById('progress-modal').classList.remove('hidden');
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-count').textContent = `0 / ${total}`;
+        }
+
+        function updateProgress(current, total, name) {
+            const percent = Math.round((current / total) * 100);
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('progress-count').textContent = `${current} / ${total}`;
+            document.getElementById('progress-text').textContent = name || 'Processing...';
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-modal').classList.add('hidden');
+        }
+
+        // ============================================
+        // SAMPLE DOWNLOADS
+        // ============================================
+        function downloadSampleJson() {
+            const sample = [
+                {
+                    "company_name": "株式会社ABC製作所",
+                    "company_name_kana": "カブシキガイシャエービーシーセイサクジョ",
+                    "branch_name": "本社工場",
+                    "corporation_number": "1234567890123",
+                    "employment_insurance_number": "12345678901",
+                    "postal_code": "480-0000",
+                    "prefecture": "愛知県",
+                    "city": "春日井市",
+                    "address_line1": "○○町1-2-3",
+                    "full_address": "愛知県春日井市○○町1-2-3",
+                    "telephone": "0568-00-0000",
+                    "contact_person": "田中太郎",
+                    "capital": 50000000,
+                    "annual_sales": 500000000,
+                    "total_employees": 200,
+                    "foreign_employees": 30,
+                    "business_type_code": "29",
+                    "business_type_name": "製造業"
+                },
+                {
+                    "company_name": "株式会社XYZ工業",
+                    "branch_name": "第2工場",
+                    "corporation_number": "9876543210987",
+                    "full_address": "愛知県小牧市△△町4-5-6",
+                    "telephone": "0568-11-1111",
+                    "total_employees": 150,
+                    "foreign_employees": 20,
+                    "business_type_name": "製造業"
+                }
+            ];
+
+            const blob = new Blob([JSON.stringify(sample, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'haken_saki_sample.json';
+            link.click();
+        }
+
+        function downloadSampleExcel() {
+            const headers = [
+                '社員番号', '姓', '名', '漢字氏名', '国籍', '生年月日', '性別',
+                'パスポート番号', 'パスポート有効期限',
+                '在留資格', '在留期間', '在留期限', '在留カード番号',
+                '住所', '電話番号', '携帯電話', 'メール'
+            ];
+
+            const sampleData = [
+                ['UNS-202501-0001', 'NGUYEN', 'VAN MINH', 'グエン ヴァン ミン', 'ベトナム', '1990-05-15', '男',
+                 'B12345678', '2030-01-15',
+                 '技術・人文知識・国際業務', '3年', '2025-04-01', 'AB12345678CD',
+                 '愛知県名古屋市中区栄1-1-1', '052-123-4567', '090-1234-5678', 'nguyen@example.com'],
+                ['UNS-202501-0002', 'TRAN', 'THI HOA', 'チャン ティ ホア', 'ベトナム', '1992-08-20', '女',
+                 'C87654321', '2029-06-30',
+                 '技術・人文知識・国際業務', '1年', '2025-06-15', 'CD87654321EF',
+                 '愛知県春日井市○○町2-3-4', '', '080-9876-5432', 'tran@example.com']
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '従業員データ');
+            XLSX.writeFile(wb, 'employees_sample.xlsx');
+        }
+
+        // ============================================
+        // AUTH
+        // ============================================
+        function logout() {
+            localStorage.removeItem('access_token');
+            sessionStorage.removeItem('access_token');
+            window.location.href = '/login.html';
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check auth
+            const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login.html';
+          
