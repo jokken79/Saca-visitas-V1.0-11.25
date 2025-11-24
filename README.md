@@ -1,267 +1,49 @@
 # 🇯🇵 UNS Visa Management System
 
-## 派遣会社向けビザ管理システム
+Sistema completo de gestión de visas y compañías派遣 con backend FastAPI/PostgreSQL y frontend estático en Tailwind.
 
-Sistema completo de gestión de visas para empresas派遣 (Haken) en Japón.
+## 📦 Visión general del repositorio
+- **Backend (FastAPI)**: `backend/` expone routers de autenticación, validadores y CRUD en memoria para **派遣先 (Haken Saki)**. El pool `asyncpg` está preparado para PostgreSQL en `main.py`.
+- **Base de datos**: `database/init.sql` define un esquema amplio para empleados, contratos, asignaciones y empresas tanto **派遣元** como **派遣先**.
+- **Frontend estático**: páginas HTML en `frontend/` consumen la API directamente (sin build tools). Se incluye navegación, dashboards y modales de edición con Tailwind.
+- **Contenedores**: `docker-compose.yml` levanta API, base de datos y frontend estático.
 
----
+### Tablas clave analizadas (database/init.sql)
+- **employees** (`従業員`): almacena datos personales, contacto en Japón, pasaporte/visa, historial y estado laboral. Incluye campos como `family_name`, `nationality`, `current_visa_status`, `residence_card_number`, fechas de expiración y metadatos de auditoría.【F:database/init.sql†L46-L136】【F:database/init.sql†L200-L234】
+- **haken_saki_company** (`派遣先会社`): datos de clientes/fábricas: nombre y sucursal, números oficiales (`corporation_number`, `employment_insurance_number`), dirección completa, contacto (`telephone`, `contact_person`, `contact_email`), indicadores de negocio y contrato, empleados totales y notas.【F:database/init.sql†L21-L91】
+- **dispatch_assignments / employment_contracts**: vinculan empleados con派遣元/先 y controlan periodos, puestos y estado del contrato.【F:database/init.sql†L235-L296】
 
-## 🚀 Instalación Rápida
-
-### Windows (Doble clic)
-```
-install.bat
-```
-
-### Windows (PowerShell)
-```powershell
-.\install.ps1
-```
-
-### Después de instalar
-| Servicio | URL |
-|----------|-----|
-| 🌐 Frontend | http://localhost:8180 |
-| 📚 API Docs | http://localhost:8100/docs |
-| 🗄️ DB Admin | http://localhost:8181 |
-
-**Credenciales de demo:**
-- Admin: `admin` / `admin123`
-- Staff: `staff` / `staff123`
-
----
-
-## 📋 Características
-
-### ✅ OCR Automático
-- Lectura automática de **在留カード** (Zairyu Card)
-- Lectura automática de **パスポート** (Passport)
-- Auto-completado de formularios
-
-### ✅ Generación de Excel Oficial
-- Formato idéntico al oficial de **出入国在留管理庁**
-- 4 hojas: 申請人等作成用１～３, 所属機関等作成用
-- Listo para presentar en入管
-
-### ✅ Gestión派遣
-- **派遣元** (Haken Moto) - Tu empresa
-- **派遣先** (Haken Saki) - Fábricas/clientes
-- Relación completa de trabajadores y contratos
-
-### ✅ Validaciones Completas
-- 在留カード番号 (AB12345678CD)
-- 法人番号 (13 dígitos)
-- 雇用保険適用事業所番号 (11 dígitos)
-- Teléfonos japoneses
-- Código postal
-
-### ✅ Alertas Automáticas
-- Visas próximas a vencer (90, 60, 30 días)
-- Documentos pendientes
-- Renovaciones necesarias
-
----
-
-## 🛠️ Tecnologías
-
-| Componente | Tecnología |
-|------------|------------|
-| Backend | FastAPI (Python 3.11) |
-| Database | PostgreSQL 15 |
-| Frontend | React + TailwindCSS |
-| OCR | Claude AI Vision |
-| Excel | openpyxl |
-| Container | Docker |
-
----
-
-## 🚀 Instalación
-
-### Requisitos
-- Docker & Docker Compose
-- Git
-
-### Pasos
-
+## 🚀 Puesta en marcha rápida
 ```bash
-# 1. Clonar repositorio
-git clone https://github.com/your-repo/uns-visa-system.git
-cd uns-visa-system
+# 1) Clonar y situarte en el proyecto
+cd Saca-visitas-V1.0-11.25
 
-# 2. Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus valores
+# 2) Arrancar servicios
+docker compose up -d
 
-# 3. Iniciar servicios
-docker-compose up -d
-
-# 4. Verificar
-curl http://localhost:8000/health
+# 3) URLs por defecto
+# API docs:      http://localhost:8100/docs
+# Frontend:      http://localhost:8180
+# Adminer (DB):  http://localhost:8181
 ```
 
-### URLs
+## 🧭 Frontend disponible
+- `frontend/index.html`: dashboard con accesos rápidos y estadísticas.
+- `frontend/employees.html`: gestor de empleados con filtros, exportación y modal de alta/edición.
+- `frontend/import.html`: importación de empleados (Excel) y派遣先 (JSON).
+- `frontend/haken-saki.html`: **nuevo editor de派遣先** para revisar y completar información faltante.
 
-| Servicio | URL |
-|----------|-----|
-| API | http://localhost:8000 |
-| API Docs | http://localhost:8000/docs |
-| Frontend | http://localhost:80 |
-| Adminer (DB) | http://localhost:8080 |
+## 🏭 Editor de Haken Saki
+La nueva página `frontend/haken-saki.html` permite:
+- Listar派遣先 activos, buscar por nombre/dirección y ver tags de **“Información incompleta”** cuando faltan campos críticos.
+- Abrir un modal para crear o completar datos (números oficiales, dirección, contacto, contrato, indicadores de negocio) y enviarlos a la API `/api/haken-saki` (POST/PUT).
+- Marcar compañías como inactivas o eliminarlas con el endpoint DELETE `/api/haken-saki/{id}`.
 
----
+## 🔌 API relevante
+- `GET /api/haken-saki`: listado con soporte de búsqueda y filtro de activos.
+- `POST /api/haken-saki`: alta de派遣先 con validaciones básicas.
+- `PUT /api/haken-saki/{id}`: actualización parcial.
+- `DELETE /api/haken-saki/{id}?hard_delete=false`: baja lógica (por defecto) o eliminación.
 
-## 📁 Estructura del Proyecto
-
-```
-uns-visa-system/
-├── backend/
-│   ├── main.py              # FastAPI application
-│   ├── excel_generator.py   # Generador de Excel oficial
-│   ├── requirements.txt     # Python dependencies
-│   └── Dockerfile
-├── frontend/
-│   ├── index.html           # Formulario con OCR
-│   └── validators.js        # Validaciones en JS
-├── database/
-│   └── init.sql             # Schema inicial
-├── docker-compose.yml
-└── README.md
-```
-
----
-
-## 📊 API Endpoints
-
-### Employees (従業員)
-
-| Method | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/employees` | Listar empleados |
-| POST | `/api/employees` | Crear empleado |
-| GET | `/api/employees/{id}` | Obtener por ID |
-| GET | `/api/employees/card/{number}` | Buscar por在留カード |
-
-### OCR
-
-| Method | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/ocr/import` | Importar datos de OCR |
-
-### Validation (検証)
-
-| Method | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/validate/card` | Validar在留カード番号 |
-| POST | `/api/validate/corporation` | Validar法人番号 |
-
-### Alerts (アラート)
-
-| Method | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/alerts/expiring?days=90` | Visas por vencer |
-
-### Statistics (統計)
-
-| Method | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/stats` | Dashboard stats |
-
----
-
-## 🗄️ Base de Datos
-
-### Tablas Principales
-
-```sql
--- Empresa派遣元 (tu empresa)
-haken_moto_company
-
--- Empresas派遣先 (fábricas)
-haken_saki_company
-
--- Empleados
-employees
-
--- Contratos de empleo
-employment_contracts
-
--- Asignaciones de派遣
-dispatch_assignments
-
--- Solicitudes de visa
-visa_applications
-```
-
-### Vista para Formularios
-```sql
--- Obtiene todos los datos necesarios para generar申請書
-SELECT * FROM v_visa_form_data WHERE employee_id = ?
-```
-
----
-
-## ✅ Validaciones
-
-### 在留カード番号
-```
-Formato: XX99999999XX
-Ejemplo: AB12345678CD
-```
-
-### 法人番号
-```
-Formato: 9999999999999 (13 dígitos)
-Incluye validación de checksum
-```
-
-### 雇用保険適用事業所番号
-```
-Formato: 99999999999 (11 dígitos)
-Display: 9999-999999-9
-```
-
----
-
-## 📝 Formularios Soportados
-
-1. **在留期間更新許可申請書** (Renewal)
-   - Para personas que ya están en Japón
-   - Visa próxima a vencer
-
-2. **在留資格認定証明書交付申請書** (COE)
-   - Para nuevos empleados en el extranjero
-   - Primera entrada a Japón
-
-3. **在留資格変更許可申請書** (Change)
-   - Cambio de tipo de visa
-   - Ej: 留学 → 技術・人文知識・国際業務
-
----
-
-## 🔒 Seguridad
-
-- Datos sensibles encriptados
-- HTTPS obligatorio en producción
-- Validación de entrada en frontend y backend
-- Logs de auditoría
-
----
-
-## 📞 Soporte
-
-Para preguntas o problemas:
-- Email: support@uns-visa.jp
-- GitHub Issues
-
----
-
-## 📜 Licencia
-
-MIT License - Uso libre para empresas派遣 en Japón.
-
----
-
-## 🙏 Créditos
-
-Desarrollado con ❤️ por el equipo de UNS
-Powered by Claude AI
+## 🧪 Tests
+No se incluyen suites automatizadas; se recomienda probar manualmente los flujos principales (listado, creación, edición y desactivación de派遣先) desde el frontend nuevo.
