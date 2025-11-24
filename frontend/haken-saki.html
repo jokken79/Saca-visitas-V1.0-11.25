@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>派遣先編集 - UNS Visa Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 600; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-slate-800 text-white p-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="flex items-center gap-2 hover:opacity-80">
+                    <span class="text-2xl">🇯🇵</span>
+                    <span class="font-bold">UNS Visa System</span>
+                </a>
+                <span class="text-slate-400">|</span>
+                <span class="text-orange-300">派遣先編集</span>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-slate-300">
+                <a href="employees.html" class="hover:text-white">従業員</a>
+                <a href="import.html" class="hover:text-white">インポート</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">派遣先の情報補完</h1>
+                <p class="text-slate-500">Haken Saki Editor - Completa datos faltantes de clientes/fábricas</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="reload-btn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300" onclick="loadCompanies()">再読み込み</button>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2" onclick="openModal()">＋ 新規登録</button>
+            </div>
+        </div>
+
+        <!-- Filters & stats -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4">
+                <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl">🏭</div>
+                <div>
+                    <div class="text-sm text-slate-500">派遣先総数</div>
+                    <div id="stat-total" class="text-2xl font-bold text-slate-800">0</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4">
+                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xl">🧭</div>
+                <div>
+                    <div class="text-sm text-slate-500">情報不足の派遣先</div>
+                    <div id="stat-missing" class="text-2xl font-bold text-amber-600">0</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xl">✅</div>
+                <div>
+                    <div class="text-sm text-slate-500">情報完備</div>
+                    <div id="stat-complete" class="text-2xl font-bold text-emerald-700">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">検索</label>
+                    <input id="search" type="text" placeholder="会社名、住所、担当者..." class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400" oninput="renderTable()">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">表示</label>
+                    <select id="filter-missing" class="w-full border rounded-lg px-3 py-2" onchange="renderTable()">
+                        <option value="all">すべて</option>
+                        <option value="missing">情報不足のみ</option>
+                        <option value="complete">情報完備のみ</option>
+                    </select>
+                </div>
+                <div class="flex items-end justify-end gap-2">
+                    <button class="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50" onclick="toggleActiveFilter()" id="active-toggle">有効のみ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b">
+                    <tr>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-600">会社</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-600">連絡先</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-600">所在地</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-600">契約</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-600">状態</th>
+                        <th class="text-center px-4 py-3 text-sm font-medium text-slate-600">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y">
+                    <tr id="loading-row">
+                        <td colspan="6" class="text-center py-8 text-slate-500">読み込み中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="company-modal" class="fixed inset-0 bg-black/50 hidden z-50 overflow-y-auto">
+        <div class="min-h-screen flex items-start justify-center p-4 pt-10">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl">
+                <div class="flex justify-between items-center px-6 py-4 border-b">
+                    <div>
+                        <h2 id="modal-title" class="text-xl font-bold">派遣先登録</h2>
+                        <p class="text-sm text-slate-500">法人番号・雇用保険・住所・担当者など不足を補完してください</p>
+                    </div>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                </div>
+
+                <form id="company-form" class="p-6 space-y-6" onsubmit="event.preventDefault(); saveCompany();">
+                    <input type="hidden" id="company-id">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-bold text-slate-700 mb-3">📋 基本情報</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">会社名 <span class="text-red-500">*</span></label>
+                                    <input required id="company-name" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="株式会社〇〇">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">支店名</label>
+                                    <input id="branch-name" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="東京支店">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">法人番号</label>
+                                    <input id="corporation-number" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="13桁">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">雇用保険番号</label>
+                                    <input id="insurance-number" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="11桁">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-bold text-slate-700 mb-3">📞 連絡先</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">電話番号</label>
+                                    <input id="telephone" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="052-123-4567">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">FAX</label>
+                                    <input id="fax" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="052-123-4568">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">担当者</label>
+                                        <input id="contact-person" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="山田太郎">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">メール</label>
+                                        <input id="contact-email" type="email" class="w-full border rounded-lg px-3 py-2" placeholder="taro@example.jp">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">備考</label>
+                                    <textarea id="notes" rows="2" class="w-full border rounded-lg px-3 py-2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-bold text-slate-700 mb-3">📍 住所</h3>
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">郵便番号</label>
+                                        <input id="postal-code" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="100-0001">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">都道府県</label>
+                                        <input id="prefecture" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="東京都">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">市区町村</label>
+                                        <input id="city" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="千代田区">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">住所１</label>
+                                    <input id="address1" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="丸の内1-1-1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">住所２</label>
+                                    <input id="address2" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="ABCビル5F">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-bold text-slate-700 mb-3">📑 契約・事業</h3>
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">契約開始</label>
+                                        <input id="contract-start" type="date" class="w-full border rounded-lg px-3 py-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">契約終了</label>
+                                        <input id="contract-end" type="date" class="w-full border rounded-lg px-3 py-2">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-600 mb-1">契約状態</label>
+                                    <select id="contract-status" class="w-full border rounded-lg px-3 py-2">
+                                        <option value="active">active</option>
+                                        <option value="suspended">suspended</option>
+                                        <option value="ended">ended</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">業種名</label>
+                                        <input id="business-name" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="製造業">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">業種コード</label>
+                                        <input id="business-code" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="E1234">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">業界</label>
+                                        <input id="industry" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="電機">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">従業員</label>
+                                        <input id="total-employees" type="number" min="0" class="w-full border rounded-lg px-3 py-2" placeholder="100">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">外国人</label>
+                                        <input id="foreign-employees" type="number" min="0" class="w-full border rounded-lg px-3 py-2" placeholder="10">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-slate-600 mb-1">実習生</label>
+                                        <input id="trainee-count" type="number" min="0" class="w-full border rounded-lg px-3 py-2" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2">
+                        <button type="button" id="delete-btn" class="hidden text-red-600 hover:text-red-700" onclick="deleteCompany()">🗑️ 削除/無効化</button>
+                        <div class="flex gap-3 ml-auto">
+                            <button type="button" class="px-4 py-2 border rounded-lg" onclick="closeModal()">キャンセル</button>
+                            <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let companies = [];
+        let activeOnly = true;
+
+        const REQUIRED_FIELDS = [
+            { key: 'corporation_number', label: '法人番号' },
+            { key: 'employment_insurance_number', label: '雇用保険番号' },
+            { key: 'telephone', label: '電話番号' },
+            { key: 'contact_person', label: '担当者' },
+            { key: 'contact_email', label: 'メール' },
+            { key: 'postal_code', label: '郵便番号' },
+            { key: 'prefecture', label: '都道府県' },
+            { key: 'city', label: '市区町村' },
+            { key: 'contract_start_date', label: '契約開始' },
+            { key: 'business_type_name', label: '業種名' }
+        ];
+
+        function missingFields(company) {
+            return REQUIRED_FIELDS.filter(f => !company[f.key]);
+        }
+
+        function toggleActiveFilter() {
+            activeOnly = !activeOnly;
+            document.getElementById('active-toggle').textContent = activeOnly ? '有効のみ' : 'すべて表示';
+            renderTable();
+        }
+
+        async function loadCompanies() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">読み込み中...</td></tr>';
+            try {
+                const res = await fetch(`/api/haken-saki?active_only=${activeOnly}`);
+                if (!res.ok) throw new Error('API error');
+                companies = await res.json();
+            } catch (e) {
+                companies = [];
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-500">データを取得できませんでした</td></tr>';
+                return;
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            const search = document.getElementById('search').value.toLowerCase();
+            const filterMissing = document.getElementById('filter-missing').value;
+
+            let filtered = companies.filter(c => {
+                const haystack = `${c.company_name || ''} ${c.branch_name || ''} ${c.full_address || ''} ${c.contact_person || ''}`.toLowerCase();
+                return haystack.includes(search);
+            });
+
+            filtered = filtered.filter(c => activeOnly ? c.is_active !== false : true);
+
+            if (filterMissing === 'missing') {
+                filtered = filtered.filter(c => missingFields(c).length > 0);
+            } else if (filterMissing === 'complete') {
+                filtered = filtered.filter(c => missingFields(c).length === 0);
+            }
+
+            const missingCount = filtered.filter(c => missingFields(c).length > 0).length;
+            document.getElementById('stat-total').textContent = filtered.length;
+            document.getElementById('stat-missing').textContent = missingCount;
+            document.getElementById('stat-complete').textContent = filtered.length - missingCount;
+
+            if (!filtered.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500">該当する派遣先がありません</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(company => {
+                const missing = missingFields(company);
+                const missingTag = missing.length
+                    ? `<span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">情報不足 (${missing.length})</span>`
+                    : `<span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded-full">完備</span>`;
+
+                const statusTag = company.is_active === false
+                    ? '<span class="bg-slate-200 text-slate-700 text-xs px-2 py-1 rounded-full">inactive</span>'
+                    : `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">${company.contract_status || 'active'}</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3">
+                            <div class="font-semibold text-slate-800">${company.company_name || '---'}</div>
+                            <div class="text-sm text-slate-500">${company.branch_name || ''}</div>
+                            <div class="mt-1 flex gap-2 items-center">${missingTag}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-700">
+                            <div>${company.telephone || '—'}</div>
+                            <div class="text-slate-500">${company.contact_person || ''}</div>
+                            <div class="text-slate-400">${company.contact_email || ''}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-700">
+                            <div>${company.full_address || [company.prefecture, company.city, company.address_line1].filter(Boolean).join(' ') || '—'}</div>
+                            <div class="text-slate-500">〒 ${company.postal_code || '—'}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-700">
+                            <div>${company.contract_start_date || '—'} ~ ${company.contract_end_date || ''}</div>
+                            <div class="text-slate-500">${company.business_type_name || company.industry_sector || ''}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-700">${statusTag}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button class="text-blue-600 hover:text-blue-800 text-sm" onclick='openModal(${JSON.stringify(company)})'>編集</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openModal(data = null) {
+            document.getElementById('company-modal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            document.getElementById('company-form').reset();
+            document.getElementById('delete-btn').classList.add('hidden');
+
+            if (data) {
+                document.getElementById('modal-title').textContent = '派遣先編集';
+                document.getElementById('company-id').value = data.id;
+                document.getElementById('company-name').value = data.company_name || '';
+                document.getElementById('branch-name').value = data.branch_name || '';
+                document.getElementById('corporation-number').value = data.corporation_number || '';
+                document.getElementById('insurance-number').value = data.employment_insurance_number || '';
+                document.getElementById('telephone').value = data.telephone || '';
+                document.getElementById('fax').value = data.fax || '';
+                document.getElementById('contact-person').value = data.contact_person || '';
+                document.getElementById('contact-email').value = data.contact_email || '';
+                document.getElementById('notes').value = data.notes || '';
+                document.getElementById('postal-code').value = data.postal_code || '';
+                document.getElementById('prefecture').value = data.prefecture || '';
+                document.getElementById('city').value = data.city || '';
+                document.getElementById('address1').value = data.address_line1 || '';
+                document.getElementById('address2').value = data.address_line2 || '';
+                document.getElementById('contract-start').value = data.contract_start_date || '';
+                document.getElementById('contract-end').value = data.contract_end_date || '';
+                document.getElementById('contract-status').value = data.contract_status || 'active';
+                document.getElementById('business-name').value = data.business_type_name || '';
+                document.getElementById('business-code').value = data.business_type_code || '';
+                document.getElementById('industry').value = data.industry_sector || '';
+                document.getElementById('total-employees').value = data.total_employees ?? '';
+                document.getElementById('foreign-employees').value = data.foreign_employees ?? '';
+                document.getElementById('trainee-count').value = data.trainee_count ?? '';
+                document.getElementById('delete-btn').classList.remove('hidden');
+                document.getElementById('delete-btn').textContent = data.is_active === false ? '🗑️ 完全削除' : '🗑️ 削除/無効化';
+            } else {
+                document.getElementById('modal-title').textContent = '派遣先登録';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('company-modal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        async function saveCompany() {
+            const id = document.getElementById('company-id').value;
+            const payload = {
+                company_name: document.getElementById('company-name').value,
+                branch_name: document.getElementById('branch-name').value || null,
+                corporation_number: document.getElementById('corporation-number').value || null,
+                employment_insurance_number: document.getElementById('insurance-number').value || null,
+                telephone: document.getElementById('telephone').value || null,
+                fax: document.getElementById('fax').value || null,
+                contact_person: document.getElementById('contact-person').value || null,
+                contact_email: document.getElementById('contact-email').value || null,
+                notes: document.getElementById('notes').value || null,
+                postal_code: document.getElementById('postal-code').value || null,
+                prefecture: document.getElementById('prefecture').value || null,
+                city: document.getElementById('city').value || null,
+                address_line1: document.getElementById('address1').value || null,
+                address_line2: document.getElementById('address2').value || null,
+                contract_start_date: document.getElementById('contract-start').value || null,
+                contract_end_date: document.getElementById('contract-end').value || null,
+                contract_status: document.getElementById('contract-status').value || null,
+                business_type_name: document.getElementById('business-name').value || null,
+                business_type_code: document.getElementById('business-code').value || null,
+                industry_sector: document.getElementById('industry').value || null,
+                total_employees: document.getElementById('total-employees').value ? Number(document.getElementById('total-employees').value) : null,
+                foreign_employees: document.getElementById('foreign-employees').value ? Number(document.getElementById('foreign-employees').value) : null,
+                trainee_count: document.getElementById('trainee-count').value ? Number(document.getElementById('trainee-count').value) : null,
+            };
+
+            try {
+                const res = await fetch(id ? `/api/haken-saki/${id}` : '/api/haken-saki', {
+                    method: id ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.detail || '保存に失敗しました');
+                }
+
+                closeModal();
+                await loadCompanies();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deleteCompany() {
+            const id = document.getElementById('company-id').value;
+            if (!id) return;
+
+            const hard = companies.find(c => c.id == id)?.is_active === false;
+            const confirmText = hard ? '完全削除しますか？' : '無効化しますか？';
+            if (!confirm(confirmText)) return;
+
+            try {
+                const res = await fetch(`/api/haken-saki/${id}?hard_delete=${hard}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('削除に失敗しました');
+                closeModal();
+                await loadCompanies();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        loadCompanies();
+    </script>
+</body>
+</html>
