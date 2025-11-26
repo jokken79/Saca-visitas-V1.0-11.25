@@ -681,8 +681,35 @@
             }
         }
 
-        function generateForm(id) {
-            window.location.href = `visa-renewal.html?employee_id=${id}`;
+        async function generateForm(id) {
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/export/visa-renewal/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `visa_renewal_${id}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'エクスポートに失敗しました');
+                }
+            } catch (error) {
+                console.error('Error exporting form:', error);
+                alert('エクスポート中にエラーが発生しました');
+            }
         }
 
         function exportCSV() {

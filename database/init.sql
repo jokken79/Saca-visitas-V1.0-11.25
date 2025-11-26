@@ -794,10 +794,37 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 
 -- Insertar tu empresa (UNS) como派遣元
-INSERT INTO haken_moto_company (
-    company_name, company_name_kana, corporation_number,
-    employment_insurance_number, worker_dispatch_license,
     postal_code, prefecture, city, address_line1, full_address,
+    telephone, email, representative_name, business_type_name
+) VALUES (
+    'UNS株式会社', 'ユーエヌエス', '1234567890123',
+    '12345678901', '派23-300000',
+    '486-0000', '愛知県', '春日井市', '柏井町1-1', '愛知県春日井市柏井町1-1',
+    '0568-00-0000', 'info@uns.co.jp', '代表 太郎', '人材派遣業'
+);
+
+-- Insertar usuarios por defecto
+-- Admin: admin / admin123
+INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+VALUES (
+    'admin', 
+    'admin@uns-visa.jp', 
+    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO9G', 
+    'System Administrator', 
+    'admin', 
+    true
+) ON CONFLICT (username) DO NOTHING;
+
+-- Staff: staff / staff123
+INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+VALUES (
+    'staff', 
+    'staff@uns-visa.jp', 
+    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 
+    'Staff User', 
+    'staff', 
+    true
+) ON CONFLICT (username) DO NOTHING;
     telephone, capital, annual_sales, total_employees, foreign_employees,
     representative_name, representative_title, business_type_code, business_type_name,
     immigration_category

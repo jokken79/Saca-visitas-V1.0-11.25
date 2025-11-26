@@ -16,9 +16,11 @@ import os
 try:
     from auth import router as auth_router
     from haken_saki import router as haken_saki_router
+    from export import router as export_router
 except ImportError:
     auth_router = None
     haken_saki_router = None
+    export_router = None
 
 app = FastAPI(
     title="UNS Visa Management API",
@@ -31,6 +33,8 @@ if auth_router:
     app.include_router(auth_router)
 if haken_saki_router:
     app.include_router(haken_saki_router)
+if export_router:
+    app.include_router(export_router)
 
 # CORS
 app.add_middleware(
@@ -45,18 +49,21 @@ app.add_middleware(
 # CONFIGURACIÓN
 # ============================================================
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/uns_visa")
-db_pool = None
+from database import init_db, close_db, get_db_pool
+
+# ... (imports)
+
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
 
 @app.on_event("startup")
 async def startup():
-    global db_pool
-    db_pool = await asyncpg.create_pool(DATABASE_URL)
+    await init_db()
 
 @app.on_event("shutdown")
 async def shutdown():
-    if db_pool:
-        await db_pool.close()
+    await close_db()
 
 # ============================================================
 # VALIDADORES
@@ -230,11 +237,13 @@ class VisaApplication(BaseModel):
 async def create_employee(emp: EmployeeCreate):
     """従業員を作成"""
     if not emp.employee_code:
-        async with db_pool.acquire() as conn:
+        pool = await get_db_pool()
+    async with pool.acquire() as conn:
             count = await conn.fetchval("SELECT COUNT(*) FROM employees")
             emp.employee_code = f"UNS-{date.today():%Y%m}-{count+1:04d}"
     
-    async with db_pool.acquire() as conn:
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
         row = await conn.fetchrow("""
             INSERT INTO employees (
                 employee_code, family_name, given_name, family_name_kanji, given_name_kanji,
@@ -269,7 +278,8 @@ async def list_employees(skip: int = 0, limit: int = 100, nationality: Optional[
         params.append(nationality)
     query += f" ORDER BY current_expiration_date ASC LIMIT {limit} OFFSET {skip}"
     
-    async with db_pool.acquire() as conn:
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
         rows = await conn.fetch(query, *params)
         results = []
         for row in rows:
@@ -282,7 +292,8 @@ async def list_employees(skip: int = 0, limit: int = 100, nationality: Optional[
 @app.get("/api/employees/{id}", tags=["Employees"])
 async def get_employee(id: int):
     """従業員詳細"""
-    async with db_pool.acquire() as conn:
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
         row = await conn.fetchrow("SELECT * FROM employees WHERE id = $1", id)
         if not row:
             raise HTTPException(404, "従業員が見つかりません")
@@ -291,13 +302,102 @@ async def get_employee(id: int):
             emp['visa_status'] = Validators.visa_status(emp['current_expiration_date'])
         return emp
 
+@app.put("/api/employees/{id}", tags=["Employees"])
+async def update_employee(id: int, emp: EmployeeCreate):
+    """従業員更新"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Check if exists
+        exists = await conn.fetchval("SELECT 1 FROM employees WHERE id = $1", id)
+        if not exists:
+            raise HTTPException(404, "従業員が見つかりません")
+
+        # Update
+        row = await conn.fetchrow("""
+            UPDATE employees SET
+                family_name = $2, given_name = $3, family_name_kanji = $4, given_name_kanji = $5,
+                nationality = $6, date_of_birth = $7, sex = $8, marital_status = $9, place_of_birth = $10, home_town_city = $11,
+                postal_code_japan = $12, address_japan = $13, telephone_japan = $14, cellular_phone = $15, email = $16,
+                passport_number = $17, passport_expiration = $18, passport_issue_country = $19,
+                current_visa_status = $20, current_period_of_stay = $21, current_expiration_date = $22, residence_card_number = $23,
+                school_location = $24, school_name = $25, graduation_date = $26, major_field = $27,
+                has_it_qualification = $28, it_qualification_name = $29, japanese_level = $30, has_criminal_record = $31
+            WHERE id = $1
+            RETURNING *
+        """, id, emp.family_name, emp.given_name, emp.family_name_kanji, emp.given_name_kanji,
+            emp.nationality, emp.date_of_birth, emp.sex, emp.marital_status, emp.place_of_birth, emp.home_town_city,
+            emp.postal_code_japan, emp.address_japan, emp.telephone_japan, emp.cellular_phone, emp.email,
+            emp.passport_number, emp.passport_expiration, emp.passport_issue_country,
+            emp.current_visa_status, emp.current_period_of_stay, emp.current_expiration_date, emp.residence_card_number,
+            emp.school_location, emp.school_name, emp.graduation_date, emp.major_field,
+            emp.has_it_qualification, emp.it_qualification_name, emp.japanese_level, emp.has_criminal_record)
+        
+        return dict(row)
+
+@app.delete("/api/employees/{id}", tags=["Employees"])
+async def delete_employee(id: int):
+    """従業員削除 (論理削除)"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("UPDATE employees SET employment_status = 'inactive' WHERE id = $1", id)
+        if result == "DELETE 0": # UPDATE 0 in this case but checking row count
+             # asyncpg execute returns "UPDATE N"
+             if result == "UPDATE 0":
+                raise HTTPException(404, "従業員が見つかりません")
+        return {"message": "削除しました"}
+
+@app.put("/api/employees/{id}", tags=["Employees"])
+async def update_employee(id: int, emp: EmployeeCreate):
+    """従業員更新"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Check if exists
+        exists = await conn.fetchval("SELECT 1 FROM employees WHERE id = $1", id)
+        if not exists:
+            raise HTTPException(404, "従業員が見つかりません")
+
+        # Update
+        row = await conn.fetchrow("""
+            UPDATE employees SET
+                family_name = $2, given_name = $3, family_name_kanji = $4, given_name_kanji = $5,
+                nationality = $6, date_of_birth = $7, sex = $8, marital_status = $9, place_of_birth = $10, home_town_city = $11,
+                postal_code_japan = $12, address_japan = $13, telephone_japan = $14, cellular_phone = $15, email = $16,
+                passport_number = $17, passport_expiration = $18, passport_issue_country = $19,
+                current_visa_status = $20, current_period_of_stay = $21, current_expiration_date = $22, residence_card_number = $23,
+                school_location = $24, school_name = $25, graduation_date = $26, major_field = $27,
+                has_it_qualification = $28, it_qualification_name = $29, japanese_level = $30, has_criminal_record = $31
+            WHERE id = $1
+            RETURNING *
+        """, id, emp.family_name, emp.given_name, emp.family_name_kanji, emp.given_name_kanji,
+            emp.nationality, emp.date_of_birth, emp.sex, emp.marital_status, emp.place_of_birth, emp.home_town_city,
+            emp.postal_code_japan, emp.address_japan, emp.telephone_japan, emp.cellular_phone, emp.email,
+            emp.passport_number, emp.passport_expiration, emp.passport_issue_country,
+            emp.current_visa_status, emp.current_period_of_stay, emp.current_expiration_date, emp.residence_card_number,
+            emp.school_location, emp.school_name, emp.graduation_date, emp.major_field,
+            emp.has_it_qualification, emp.it_qualification_name, emp.japanese_level, emp.has_criminal_record)
+        
+        return dict(row)
+
+@app.delete("/api/employees/{id}", tags=["Employees"])
+async def delete_employee(id: int):
+    """従業員削除 (論理削除)"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("UPDATE employees SET employment_status = 'inactive' WHERE id = $1", id)
+        if result == "DELETE 0": # UPDATE 0 in this case but checking row count
+             # asyncpg execute returns "UPDATE N"
+             if result == "UPDATE 0":
+                raise HTTPException(404, "従業員が見つかりません")
+        return {"message": "削除しました"}
+
 @app.get("/api/employees/card/{card_number}", tags=["Employees"])
 async def get_by_card(card_number: str):
     """在留カード番号で検索"""
     if not Validators.residence_card(card_number):
         raise HTTPException(400, "在留カード番号の形式が無効です")
     
-    async with db_pool.acquire() as conn:
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
         row = await conn.fetchrow(
             "SELECT * FROM employees WHERE residence_card_number = $1",
             card_number.upper()
@@ -349,7 +449,8 @@ async def import_ocr(data: OCRData):
     # Verificar si existe
     existing = None
     if result.get('residence_card_number'):
-        async with db_pool.acquire() as conn:
+        pool = await get_db_pool()
+    async with pool.acquire() as conn:
             existing = await conn.fetchrow(
                 "SELECT id FROM employees WHERE residence_card_number = $1",
                 result['residence_card_number'].upper()
@@ -368,7 +469,8 @@ async def import_ocr(data: OCRData):
 @app.get("/api/alerts/expiring", tags=["Alerts"])
 async def expiring_visas(days: int = 90):
     """期限切れ間近のビザ"""
-    async with db_pool.acquire() as conn:
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT id, employee_code, family_name, given_name, nationality,
                    current_visa_status, current_expiration_date, residence_card_number,
@@ -422,7 +524,8 @@ async def validate_corp(number: str):
 @app.get("/api/stats", tags=["Stats"])
 async def dashboard_stats():
     """ダッシュボード統計"""
-    async with db_pool.acquire() as conn:
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
         total = await conn.fetchval("SELECT COUNT(*) FROM employees WHERE employment_status='active'")
         
         by_nat = await conn.fetch("""
