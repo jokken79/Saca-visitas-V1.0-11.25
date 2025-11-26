@@ -95,9 +95,19 @@
 | critic | Cuestionador | opus | Desafía decisiones, encuentra fallas |
 | explorer | Investigador | opus | Explora código antes de modificar |
 | memory | Memoria | opus | Recuerda entre sesiones |
+| security | Guardian | opus | Audita seguridad, encuentra vulnerabilidades |
+| debugger | Detective | opus | Encuentra causa raíz de bugs |
+| reviewer | Revisor | opus | Code review antes de merge |
+| performance | Optimizador | opus | Identifica y resuelve cuellos de botella |
 | coder | Implementador | sonnet | Escribe código |
 | tester | Verificador | sonnet | Testing visual con Playwright |
 | stuck | Escalador | sonnet | Consulta al humano |
+
+## Agent Sources
+- security, debugger, reviewer, performance: Basados en mejores prácticas de:
+  - [wshobson/agents](https://github.com/wshobson/agents)
+  - [VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
+  - [vanzan01/claude-code-sub-agent-collective](https://github.com/vanzan01/claude-code-sub-agent-collective)
 
 ## Notes
 - Sistema diseñado para compensar debilidades tanto del humano como de la IA
