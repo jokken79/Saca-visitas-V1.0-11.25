@@ -1,0 +1,240 @@
+{
+  "version": "1.0.0",
+  "description": "Registry de agentes para búsqueda automática por keywords",
+  "lastUpdated": "2024-11-26",
+
+  "agents": {
+    "core": {
+      "description": "Agentes fundamentales del sistema",
+      "agents": [
+        {
+          "name": "architect",
+          "model": "opus",
+          "keywords": ["arquitectura", "diseño", "estructura", "sistema", "escalabilidad", "patrones"],
+          "invoke_when": "Al inicio de proyectos o antes de cambios estructurales"
+        },
+        {
+          "name": "critic",
+          "model": "opus",
+          "keywords": ["cuestionar", "revisar", "validar", "alternativas", "problemas", "fallas"],
+          "invoke_when": "ANTES de implementar cambios importantes"
+        },
+        {
+          "name": "explorer",
+          "model": "opus",
+          "keywords": ["explorar", "buscar", "investigar", "dependencias", "código existente"],
+          "invoke_when": "ANTES de modificar cualquier código existente"
+        },
+        {
+          "name": "memory",
+          "model": "opus",
+          "keywords": ["recordar", "decisiones", "historia", "contexto", "sesión anterior"],
+          "invoke_when": "AL INICIO de cada sesión y ANTES de decisiones importantes"
+        },
+        {
+          "name": "coder",
+          "model": "sonnet",
+          "keywords": ["implementar", "código", "escribir", "crear", "programar"],
+          "invoke_when": "Para implementar tareas específicas del todo list"
+        },
+        {
+          "name": "tester",
+          "model": "sonnet",
+          "keywords": ["test", "probar", "verificar", "playwright", "screenshot", "visual"],
+          "invoke_when": "DESPUÉS de cada implementación de coder"
+        },
+        {
+          "name": "stuck",
+          "model": "sonnet",
+          "keywords": ["error", "problema", "bloqueado", "ayuda", "decisión humana"],
+          "invoke_when": "Cuando cualquier agente encuentre un problema"
+        }
+      ]
+    },
+
+    "quality": {
+      "description": "Agentes de calidad y seguridad",
+      "agents": [
+        {
+          "name": "security",
+          "model": "opus",
+          "keywords": ["seguridad", "vulnerabilidad", "owasp", "xss", "sql injection", "auth", "encryption"],
+          "invoke_when": "ANTES de deployments y cuando se manejen datos sensibles"
+        },
+        {
+          "name": "debugger",
+          "model": "opus",
+          "keywords": ["bug", "error", "debug", "stack trace", "falla", "crash", "exception"],
+          "invoke_when": "Cuando hay errores, comportamiento inesperado, o tests fallando"
+        },
+        {
+          "name": "reviewer",
+          "model": "opus",
+          "keywords": ["code review", "calidad", "refactor", "clean code", "solid", "best practices"],
+          "invoke_when": "DESPUÉS de que coder termine y ANTES de merge/deploy"
+        },
+        {
+          "name": "performance",
+          "model": "opus",
+          "keywords": ["rendimiento", "lento", "optimizar", "velocidad", "memoria", "cpu", "cache"],
+          "invoke_when": "Cuando la aplicación es lenta o necesita escalar"
+        }
+      ]
+    },
+
+    "domain": {
+      "description": "Agentes especializados por dominio técnico",
+      "agents": [
+        {
+          "name": "frontend",
+          "model": "opus",
+          "keywords": ["html", "css", "react", "vue", "angular", "tailwind", "ui", "ux", "responsive", "componente", "estilo", "interfaz"],
+          "invoke_when": "Para cualquier tarea de interfaz de usuario"
+        },
+        {
+          "name": "backend",
+          "model": "opus",
+          "keywords": ["node", "express", "api", "rest", "graphql", "servidor", "endpoint", "middleware", "auth"],
+          "invoke_when": "Para cualquier lógica del lado del servidor"
+        },
+        {
+          "name": "database",
+          "model": "opus",
+          "keywords": ["sql", "postgres", "mysql", "mongodb", "query", "migration", "schema", "index", "tabla", "base de datos"],
+          "invoke_when": "Para cualquier tarea de datos persistentes"
+        },
+        {
+          "name": "data-sync",
+          "model": "opus",
+          "keywords": ["excel", "access", "csv", "json", "import", "export", "sync", "migrar", "etl", "foto", "ole", "transformar"],
+          "invoke_when": "Para sincronización de datos entre sistemas (Excel, Access, CSV, DB)"
+        },
+        {
+          "name": "devops",
+          "model": "opus",
+          "keywords": ["docker", "ci", "cd", "deploy", "github actions", "aws", "cloud", "nginx", "ssl", "infraestructura"],
+          "invoke_when": "Para infraestructura, deployment, o automatización"
+        },
+        {
+          "name": "api-designer",
+          "model": "opus",
+          "keywords": ["openapi", "swagger", "rest design", "api design", "contrato", "endpoint design", "versioning"],
+          "invoke_when": "Para diseñar contratos de API ANTES de implementar"
+        }
+      ]
+    }
+  },
+
+  "routing": {
+    "description": "Reglas de routing automático basadas en keywords",
+    "rules": [
+      {
+        "pattern": "excel|xls|xlsx|spreadsheet",
+        "agent": "data-sync",
+        "priority": 1
+      },
+      {
+        "pattern": "access|mdb|accdb|ole|foto",
+        "agent": "data-sync",
+        "priority": 1
+      },
+      {
+        "pattern": "react|vue|angular|css|html|ui|interfaz|componente",
+        "agent": "frontend",
+        "priority": 1
+      },
+      {
+        "pattern": "api|endpoint|rest|graphql|servidor|node|express",
+        "agent": "backend",
+        "priority": 1
+      },
+      {
+        "pattern": "sql|postgres|mysql|mongo|query|migration|tabla|base.?de.?datos",
+        "agent": "database",
+        "priority": 1
+      },
+      {
+        "pattern": "docker|deploy|ci|cd|github.?actions|cloud|aws|infraestructura",
+        "agent": "devops",
+        "priority": 1
+      },
+      {
+        "pattern": "openapi|swagger|api.?design|contrato",
+        "agent": "api-designer",
+        "priority": 1
+      },
+      {
+        "pattern": "seguridad|vulnerabilidad|owasp|auth|xss|injection",
+        "agent": "security",
+        "priority": 2
+      },
+      {
+        "pattern": "bug|error|debug|crash|exception|falla",
+        "agent": "debugger",
+        "priority": 2
+      },
+      {
+        "pattern": "lento|rendimiento|optimizar|performance|cache|memoria",
+        "agent": "performance",
+        "priority": 2
+      },
+      {
+        "pattern": "review|calidad|refactor|clean|solid",
+        "agent": "reviewer",
+        "priority": 2
+      },
+      {
+        "pattern": "test|probar|playwright|e2e|screenshot",
+        "agent": "tester",
+        "priority": 3
+      }
+    ]
+  },
+
+  "workflows": {
+    "description": "Workflows predefinidos que combinan múltiples agentes",
+    "templates": {
+      "new_feature": {
+        "description": "Implementar una nueva funcionalidad",
+        "steps": ["memory", "architect", "critic", "explorer", "coder", "reviewer", "tester"]
+      },
+      "bug_fix": {
+        "description": "Corregir un bug",
+        "steps": ["memory", "debugger", "explorer", "coder", "tester"]
+      },
+      "data_migration": {
+        "description": "Migrar datos de Excel/Access a base de datos",
+        "steps": ["memory", "data-sync", "database", "tester"]
+      },
+      "api_development": {
+        "description": "Diseñar e implementar una API",
+        "steps": ["memory", "api-designer", "critic", "backend", "security", "tester"]
+      },
+      "frontend_feature": {
+        "description": "Implementar funcionalidad de frontend",
+        "steps": ["memory", "frontend", "reviewer", "tester", "performance"]
+      },
+      "deployment": {
+        "description": "Desplegar a producción",
+        "steps": ["memory", "security", "devops", "tester"]
+      },
+      "optimization": {
+        "description": "Optimizar rendimiento",
+        "steps": ["memory", "performance", "database", "frontend", "backend"]
+      }
+    }
+  },
+
+  "statistics": {
+    "total_agents": 17,
+    "by_model": {
+      "opus": 14,
+      "sonnet": 3
+    },
+    "by_category": {
+      "core": 7,
+      "quality": 4,
+      "domain": 6
+    }
+  }
+}

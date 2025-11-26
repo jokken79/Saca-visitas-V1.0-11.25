@@ -89,19 +89,43 @@
 
 ## Agents Implemented
 
+### Core Agents (7)
 | Agent | Role | Model | Purpose |
 |-------|------|-------|---------|
 | architect | Visionario | opus | Diseña arquitectura, ve el futuro |
 | critic | Cuestionador | opus | Desafía decisiones, encuentra fallas |
 | explorer | Investigador | opus | Explora código antes de modificar |
 | memory | Memoria | opus | Recuerda entre sesiones |
+| coder | Implementador | sonnet | Escribe código |
+| tester | Verificador | sonnet | Testing visual con Playwright |
+| stuck | Escalador | sonnet | Consulta al humano |
+
+### Quality Agents (4)
+| Agent | Role | Model | Purpose |
+|-------|------|-------|---------|
 | security | Guardian | opus | Audita seguridad, encuentra vulnerabilidades |
 | debugger | Detective | opus | Encuentra causa raíz de bugs |
 | reviewer | Revisor | opus | Code review antes de merge |
 | performance | Optimizador | opus | Identifica y resuelve cuellos de botella |
-| coder | Implementador | sonnet | Escribe código |
-| tester | Verificador | sonnet | Testing visual con Playwright |
-| stuck | Escalador | sonnet | Consulta al humano |
+
+### Domain Agents (6)
+| Agent | Role | Model | Purpose |
+|-------|------|-------|---------|
+| frontend | Artista UI | opus | HTML, CSS, React, Vue, UI/UX, responsive |
+| backend | Servidor | opus | Node.js, APIs, REST, GraphQL, auth |
+| database | Datos | opus | PostgreSQL, MySQL, queries, migrations |
+| data-sync | Puente | opus | Excel↔DB, Access↔DB, ETL, fotos/OLE |
+| devops | Infra | opus | Docker, CI/CD, GitHub Actions, cloud |
+| api-designer | Contratos | opus | OpenAPI, REST design, documentación |
+
+### Summary
+- **Total Agents**: 17
+- **Opus Model**: 14 agents
+- **Sonnet Model**: 3 agents
+
+### Registry
+- Archivo: `.claude/agents-registry.json`
+- Funcionalidad: Routing automático por keywords, workflows predefinidos
 
 ## Agent Sources
 - security, debugger, reviewer, performance: Basados en mejores prácticas de:
