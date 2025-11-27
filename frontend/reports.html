@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レポート - UNS Visa Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        @media print {
+            .no-print { display: none; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/30 hover:scale-105 transition-transform">
+                        <span class="text-3xl">🇯🇵</span>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">レポート・統計</h1>
+                        <p class="text-blue-200">期限管理と統計レポート</p>
+                    </div>
+                </div>
+                <nav class="flex gap-3 no-print">
+                    <a href="index.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors">ホーム</a>
+                    <a href="employees.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors">従業員</a>
+                    <a href="haken-saki.html" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors">派遣先</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Date Filters -->
+        <div class="bg-white/10 backdrop-blur rounded-xl p-6 mb-6 no-print">
+            <h2 class="text-xl font-bold text-white mb-4">📅 期間フィルター</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="text-sm text-slate-300 mb-2 block">開始日</label>
+                    <input type="date" id="filter-date-from" class="w-full px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-sm text-slate-300 mb-2 block">終了日</label>
+                    <input type="date" id="filter-date-to" class="w-full px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyFilters()" class="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
+                        フィルター適用
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                <div class="text-3xl font-bold text-green-400" id="stat-active-employees">--</div>
+                <div class="text-sm text-slate-300">従業員数</div>
+                <div class="text-xs text-slate-400 mt-1">アクティブ</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                <div class="text-3xl font-bold text-green-400" id="stat-expiring-30">--</div>
+                <div class="text-sm text-slate-300">30日以内</div>
+                <div class="text-xs text-slate-400 mt-1">期限切れ</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                <div class="text-3xl font-bold text-yellow-400" id="stat-expiring-60">--</div>
+                <div class="text-sm text-slate-300">60日以内</div>
+                <div class="text-xs text-slate-400 mt-1">期限切れ</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                <div class="text-3xl font-bold text-orange-400" id="stat-expiring-90">--</div>
+                <div class="text-sm text-slate-300">90日以内</div>
+                <div class="text-xs text-slate-400 mt-1">期限切れ</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                <div class="text-3xl font-bold text-red-400" id="stat-expired">--</div>
+                <div class="text-sm text-slate-300">期限切れ</div>
+                <div class="text-xs text-slate-400 mt-1">既に</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                <div class="text-3xl font-bold text-blue-400" id="stat-haken-saki">--</div>
+                <div class="text-sm text-slate-300">派遣先</div>
+                <div class="text-xs text-slate-400 mt-1">アクティブ</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center col-span-2">
+                <div class="text-3xl font-bold text-purple-400" id="stat-pending">--</div>
+                <div class="text-sm text-slate-300">申請中</div>
+                <div class="text-xs text-slate-400 mt-1">手続き中</div>
+            </div>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="flex gap-3 mb-6 no-print">
+            <button onclick="exportToCSV()" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
+                <span>📥</span> CSVでエクスポート
+            </button>
+            <button onclick="window.print()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
+                <span>🖨️</span> 印刷
+            </button>
+        </div>
+
+        <!-- Expiring Visas Table -->
+        <div class="bg-white/10 backdrop-blur rounded-xl p-6 mb-8">
+            <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                <span>⚠️</span> 期限間近のビザ
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-slate-600">
+                            <th class="pb-3 text-slate-300 font-medium">名前</th>
+                            <th class="pb-3 text-slate-300 font-medium">在留カード番号</th>
+                            <th class="pb-3 text-slate-300 font-medium">在留資格</th>
+                            <th class="pb-3 text-slate-300 font-medium">期限日</th>
+                            <th class="pb-3 text-slate-300 font-medium">残り日数</th>
+                            <th class="pb-3 text-slate-300 font-medium">状態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiring-visas-tbody">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400">読み込み中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Nationality Chart -->
+            <div class="bg-white/10 backdrop-blur rounded-xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4">📊 国籍別従業員数</h2>
+                <div id="nationality-chart" class="space-y-3">
+                    <div class="text-center text-slate-400 py-8">読み込み中...</div>
+                </div>
+            </div>
+
+            <!-- Haken Saki Chart -->
+            <div class="bg-white/10 backdrop-blur rounded-xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4">🏭 派遣先別従業員数</h2>
+                <div id="hakensaki-chart" class="space-y-3">
+                    <div class="text-center text-slate-400 py-8">読み込み中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Last Updated -->
+        <div class="text-center text-slate-500 text-sm mb-4">
+            <p>最終更新: <span id="last-updated">--</span></p>
+            <p class="mt-1">自動更新: 5分ごと</p>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-slate-500 text-sm">
+            <p>UNS Visa Management System v1.0</p>
+            <p class="mt-1">© 2024 UNS株式会社 - Powered by Claude AI</p>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = '/api';
+        const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+        let refreshTimer = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default dates (last 30 days to 90 days ahead)
+            const today = new Date();
+            const dateFrom = new Date(today);
+            dateFrom.setDate(dateFrom.getDate() - 30);
+            const dateTo = new Date(today);
+            dateTo.setDate(dateTo.getDate() + 90);
+
+            document.getElementById('filter-date-from').value = dateFrom.toISOString().split('T')[0];
+            document.getElementById('filter-date-to').value = dateTo.toISOString().split('T')[0];
+
+            // Load all data
+            loadAllData();
+
+            // Set up auto-refresh
+            refreshTimer = setInterval(loadAllData, REFRESH_INTERVAL);
+        });
+
+        // Load all data
+        async function loadAllData() {
+            await Promise.all([
+                loadStatistics(),
+                loadExpiringVisas(),
+                loadNationalityChart(),
+                loadHakenSakiChart()
+            ]);
+            updateLastUpdated();
+        }
+
+        // Apply filters
+        function applyFilters() {
+            loadAllData();
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                if (!response.ok) throw new Error('Failed to load stats');
+
+                const data = await response.json();
+
+                document.getElementById('stat-active-employees').textContent = data.total_employees || 0;
+                document.getElementById('stat-expiring-30').textContent = data.expiring_30_days || 0;
+                document.getElementById('stat-expiring-60').textContent = data.expiring_60_days || 0;
+                document.getElementById('stat-expiring-90').textContent = data.expiring_90_days || 0;
+                document.getElementById('stat-expired').textContent = data.expired || 0;
+                document.getElementById('stat-pending').textContent = data.pending_applications || 0;
+
+                // Load haken-saki count separately
+                const hakenResponse = await fetch(`${API_BASE}/haken-saki/stats/summary`);
+                if (hakenResponse.ok) {
+                    const hakenData = await hakenResponse.json();
+                    document.getElementById('stat-haken-saki').textContent = hakenData.total_active || 0;
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        // Load expiring visas
+        async function loadExpiringVisas() {
+            try {
+                const response = await fetch(`${API_BASE}/employees?status=expiring&days=90`);
+                if (!response.ok) throw new Error('Failed to load expiring visas');
+
+                const employees = await response.json();
+                const tbody = document.getElementById('expiring-visas-tbody');
+
+                if (!employees || employees.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">期限間近のビザはありません</td></tr>';
+                    return;
+                }
+
+                // Sort by expiry date (earliest first)
+                const sortedEmployees = employees.sort((a, b) => {
+                    const dateA = new Date(a.zairyu_expiry_date || '9999-12-31');
+                    const dateB = new Date(b.zairyu_expiry_date || '9999-12-31');
+                    return dateA - dateB;
+                });
+
+                tbody.innerHTML = sortedEmployees.map(emp => {
+                    const expiryDate = new Date(emp.zairyu_expiry_date);
+                    const today = new Date();
+                    const daysRemaining = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+                    // Determine status color
+                    let statusClass, statusText;
+                    if (daysRemaining < 0) {
+                        statusClass = 'bg-red-900 text-red-200';
+                        statusText = '期限切れ';
+                    } else if (daysRemaining <= 30) {
+                        statusClass = 'bg-red-800 text-red-100';
+                        statusText = '緊急';
+                    } else if (daysRemaining <= 60) {
+                        statusClass = 'bg-orange-800 text-orange-100';
+                        statusText = '注意';
+                    } else if (daysRemaining <= 90) {
+                        statusClass = 'bg-yellow-800 text-yellow-100';
+                        statusText = '警告';
+                    } else {
+                        statusClass = 'bg-green-800 text-green-100';
+                        statusText = '正常';
+                    }
+
+                    return `
+                        <tr class="border-b border-slate-700 hover:bg-white/5">
+                            <td class="py-3 text-white">${emp.family_name} ${emp.given_name}</td>
+                            <td class="py-3 text-slate-300">${emp.zairyu_card_number || '--'}</td>
+                            <td class="py-3 text-slate-300">${emp.status_of_residence || '--'}</td>
+                            <td class="py-3 text-slate-300">${formatDate(emp.zairyu_expiry_date)}</td>
+                            <td class="py-3 text-white font-bold">${daysRemaining}日</td>
+                            <td class="py-3">
+                                <span class="px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading expiring visas:', error);
+                document.getElementById('expiring-visas-tbody').innerHTML =
+                    '<tr><td colspan="6" class="py-8 text-center text-red-400">データの読み込みに失敗しました</td></tr>';
+            }
+        }
+
+        // Load nationality chart
+        async function loadNationalityChart() {
+            try {
+                const response = await fetch(`${API_BASE}/employees`);
+                if (!response.ok) throw new Error('Failed to load employees');
+
+                const employees = await response.json();
+
+                // Count by nationality
+                const nationalityCounts = {};
+                employees.forEach(emp => {
+                    const nationality = emp.nationality || '不明';
+                    nationalityCounts[nationality] = (nationalityCounts[nationality] || 0) + 1;
+                });
+
+                // Sort by count
+                const sortedNationalities = Object.entries(nationalityCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10); // Top 10
+
+                const maxCount = Math.max(...sortedNationalities.map(n => n[1]));
+
+                const chartHTML = sortedNationalities.map(([nationality, count]) => {
+                    const percentage = (count / maxCount) * 100;
+                    return `
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-300">${nationality}</span>
+                                <span class="text-white font-bold">${count}名</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-6">
+                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-6 rounded-full flex items-center justify-end px-2"
+                                     style="width: ${percentage}%">
+                                    <span class="text-xs text-white font-medium">${Math.round(percentage)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('nationality-chart').innerHTML = chartHTML || '<div class="text-center text-slate-400 py-8">データなし</div>';
+            } catch (error) {
+                console.error('Error loading nationality chart:', error);
+                document.getElementById('nationality-chart').innerHTML = '<div class="text-center text-red-400 py-8">エラー</div>';
+            }
+        }
+
+        // Load haken-saki chart
+        async function loadHakenSakiChart() {
+            try {
+                const response = await fetch(`${API_BASE}/employees`);
+                if (!response.ok) throw new Error('Failed to load employees');
+
+                const employees = await response.json();
+
+                // Count by haken_saki
+                const hakenSakiCounts = {};
+                employees.forEach(emp => {
+                    const hakenSaki = emp.haken_saki_name || '未配属';
+                    hakenSakiCounts[hakenSaki] = (hakenSakiCounts[hakenSaki] || 0) + 1;
+                });
+
+                // Sort by count
+                const sortedHakenSaki = Object.entries(hakenSakiCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10); // Top 10
+
+                const maxCount = Math.max(...sortedHakenSaki.map(h => h[1]));
+
+                const chartHTML = sortedHakenSaki.map(([hakenSaki, count]) => {
+                    const percentage = (count / maxCount) * 100;
+                    return `
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-300">${hakenSaki}</span>
+                                <span class="text-white font-bold">${count}名</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-6">
+                                <div class="bg-gradient-to-r from-orange-500 to-orange-600 h-6 rounded-full flex items-center justify-end px-2"
+                                     style="width: ${percentage}%">
+                                    <span class="text-xs text-white font-medium">${Math.round(percentage)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('hakensaki-chart').innerHTML = chartHTML || '<div class="text-center text-slate-400 py-8">データなし</div>';
+            } catch (error) {
+                console.error('Error loading haken-saki chart:', error);
+                document.getElementById('hakensaki-chart').innerHTML = '<div class="text-center text-red-400 py-8">エラー</div>';
+            }
+        }
+
+        // Export to CSV
+        async function exportToCSV() {
+            try {
+                const response = await fetch(`${API_BASE}/employees?status=expiring&days=90`);
+                if (!response.ok) throw new Error('Failed to load data');
+
+                const employees = await response.json();
+
+                // Create CSV header
+                let csv = '\ufeff'; // BOM for UTF-8
+                csv += '名前,在留カード番号,在留資格,期限日,残り日数,国籍\n';
+
+                // Add data rows
+                employees.forEach(emp => {
+                    const expiryDate = new Date(emp.zairyu_expiry_date);
+                    const today = new Date();
+                    const daysRemaining = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+                    csv += `"${emp.family_name} ${emp.given_name}",`;
+                    csv += `"${emp.zairyu_card_number || ''}",`;
+                    csv += `"${emp.status_of_residence || ''}",`;
+                    csv += `"${formatDate(emp.zairyu_expiry_date)}",`;
+                    csv += `"${daysRemaining}",`;
+                    csv += `"${emp.nationality || ''}"\n`;
+                });
+
+                // Download CSV
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `visa_report_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+            } catch (error) {
+                console.error('Error exporting CSV:', error);
+                alert('CSVエクスポートに失敗しました');
+            }
+        }
+
+        // Format date helper
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+
+        // Update last updated time
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = now.toLocaleString('ja-JP');
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+        });
+    </script>
+</body>
+</html>

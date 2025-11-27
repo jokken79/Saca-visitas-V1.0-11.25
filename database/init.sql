@@ -534,6 +534,17 @@ CREATE INDEX idx_visa_apps_date ON visa_applications(application_date);
 -- Companies
 CREATE INDEX idx_haken_saki_name ON haken_saki_company(company_name);
 CREATE INDEX idx_haken_saki_status ON haken_saki_company(contract_status);
+CREATE INDEX idx_haken_saki_active ON haken_saki_company(is_active);
+CREATE INDEX idx_haken_saki_prefecture ON haken_saki_company(prefecture);
+
+-- Users
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_active ON users(is_active);
+
+-- Full-text search (Japanese)
+CREATE INDEX idx_haken_saki_name_trgm ON haken_saki_company USING gin(company_name gin_trgm_ops);
+CREATE INDEX idx_employees_name_trgm ON employees USING gin(family_name gin_trgm_ops);
 
 -- ============================================================
 -- VISTAS

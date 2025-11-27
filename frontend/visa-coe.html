@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在留資格認定証明書交付申請書 - UNS Visa Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-black/20 backdrop-blur-lg text-white p-4 shadow-lg border-b border-white/10">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="flex items-center gap-2 hover:opacity-80">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <span class="text-2xl">🇯🇵</span>
+                    </div>
+                    <span class="font-bold">UNS Visa System</span>
+                </a>
+                <span class="text-slate-400">|</span>
+                <span class="text-purple-300">在留資格認定証明書交付申請書</span>
+            </div>
+            <a href="index.html" class="text-sm text-slate-300 hover:text-white">← ホームへ戻る</a>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto p-6">
+        <!-- Header -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 mb-6 border border-white/20">
+            <div class="text-center">
+                <div class="text-5xl mb-4">📄</div>
+                <h1 class="text-3xl font-bold text-white mb-2">在留資格認定証明書交付申請書</h1>
+                <p class="text-purple-200 text-lg">Certificate of Eligibility Application</p>
+                <p class="text-slate-300 text-sm mt-2">新規採用者（国外）向け申請書</p>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <form id="coe-form" class="space-y-6">
+            <!-- 申請者情報 (Applicant Information) -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>👤</span> 申請者情報 (Applicant Information)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            氏名（ローマ字）姓 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="family-name" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-purple-500"
+                               placeholder="NGUYEN">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            氏名（ローマ字）名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="given-name" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-purple-500"
+                               placeholder="VAN MINH">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            氏名（漢字）姓
+                        </label>
+                        <input type="text" id="family-name-kanji"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="阮">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            氏名（漢字）名
+                        </label>
+                        <input type="text" id="given-name-kanji"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="文明">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            生年月日 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="date-of-birth" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            性別 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="sex" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                            <option value="">選択してください</option>
+                            <option value="male">男性</option>
+                            <option value="female">女性</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            国籍・地域 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="nationality" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                            <option value="">選択してください</option>
+                            <option value="ベトナム">ベトナム (Vietnam)</option>
+                            <option value="中国">中国 (China)</option>
+                            <option value="フィリピン">フィリピン (Philippines)</option>
+                            <option value="インドネシア">インドネシア (Indonesia)</option>
+                            <option value="ネパール">ネパール (Nepal)</option>
+                            <option value="ブラジル">ブラジル (Brazil)</option>
+                            <option value="韓国">韓国 (South Korea)</option>
+                            <option value="インド">インド (India)</option>
+                            <option value="タイ">タイ (Thailand)</option>
+                            <option value="その他">その他 (Other)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            出生地 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="birthplace" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="Hanoi, Vietnam">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            配偶者の有無 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="marital-status" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                            <option value="">選択してください</option>
+                            <option value="未婚">未婚 (Single)</option>
+                            <option value="既婚">既婚 (Married)</option>
+                            <option value="離婚">離婚 (Divorced)</option>
+                            <option value="死別">死別 (Widowed)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            職業 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="occupation" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="Software Engineer">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            本国における居所 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="home-address" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="123 Tran Hung Dao Street, Hoan Kiem District, Hanoi, Vietnam">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            電話番号 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="tel" id="phone" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="+84 24 1234 5678">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Email
+                        </label>
+                        <input type="email" id="email"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="example@email.com">
+                    </div>
+                </div>
+            </div>
+
+            <!-- パスポート情報 (Passport Information) -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>🛂</span> パスポート情報 (Passport Information)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            パスポート番号 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="passport-number" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-purple-500"
+                               placeholder="B12345678">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            パスポート有効期限 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="passport-expiration" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            発行国
+                        </label>
+                        <input type="text" id="passport-country"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="VIETNAM">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 入国予定情報 (Entry Plan Information) -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>✈️</span> 入国予定情報 (Entry Plan Information)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            入国目的 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="entry-purpose" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                            <option value="技術・人文知識・国際業務">技術・人文知識・国際業務</option>
+                            <option value="特定技能1号">特定技能1号</option>
+                            <option value="技能実習">技能実習</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            滞在予定期間 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="stay-period" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                            <option value="">選択してください</option>
+                            <option value="5年">5年</option>
+                            <option value="3年">3年</option>
+                            <option value="1年">1年</option>
+                            <option value="6月">6月</option>
+                            <option value="3月">3月</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            入国予定日 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="planned-entry-date" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            同伴者の有無 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="accompanying-family" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                            <option value="無">無 (None)</option>
+                            <option value="有">有 (Yes)</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2" id="accompanying-details" style="display:none;">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            同伴者の詳細
+                        </label>
+                        <textarea id="accompanying-info" rows="2"
+                                  class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                                  placeholder="例：配偶者1名、子供2名"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 招へい機関情報 (Inviting Organization - UNS) -->
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>🏢</span> 招へい機関 (Inviting Organization - UNS)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">会社名</label>
+                        <input type="text" id="uns-name" value="UNS株式会社" readonly
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">法人番号</label>
+                        <input type="text" id="uns-corp-number" placeholder="1234567890123"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">所在地</label>
+                        <input type="text" id="uns-address" placeholder="愛知県名古屋市..."
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">電話番号</label>
+                        <input type="tel" id="uns-phone" placeholder="052-xxx-xxxx"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">代表者氏名</label>
+                        <input type="text" id="uns-representative" placeholder="山田 太郎"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">事業内容</label>
+                        <input type="text" id="uns-business" value="労働者派遣業" readonly
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">従業員数</label>
+                        <input type="text" id="uns-employees" placeholder="100名"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 派遣先情報 (Dispatch Destination) -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>🏭</span> 派遣先情報 (Dispatch Destination)
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            派遣先会社名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="haken-name" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="株式会社〇〇">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            派遣先電話番号
+                        </label>
+                        <input type="tel" id="haken-phone"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="052-xxx-xxxx">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            派遣先所在地 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="haken-address" required
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="愛知県...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            担当者名
+                        </label>
+                        <input type="text" id="haken-contact"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="田中 一郎">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            配属部署
+                        </label>
+                        <input type="text" id="haken-department"
+                               class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                               placeholder="製造部">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            業務内容 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="job-description" rows="3" required
+                                  class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                                  placeholder="システム開発、保守、運用..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学歴・職歴 (Education & Work History) -->
+            <div class="bg-white rounded-2xl shadow-xl p-6">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span>🎓</span> 学歴・職歴 (Education & Work History)
+                </h2>
+
+                <div class="space-y-6">
+                    <!-- Education -->
+                    <div>
+                        <h3 class="font-semibold text-slate-700 mb-3">学歴 (Education)</h3>
+                        <div id="education-list" class="space-y-3">
+                            <div class="education-item grid grid-cols-1 md:grid-cols-12 gap-3 p-3 bg-slate-50 rounded-lg">
+                                <div class="md:col-span-2">
+                                    <input type="text" class="education-from w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="開始年月" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <input type="text" class="education-to w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="終了年月" />
+                                </div>
+                                <div class="md:col-span-4">
+                                    <input type="text" class="education-school w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="学校名" />
+                                </div>
+                                <div class="md:col-span-3">
+                                    <input type="text" class="education-major w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="専攻" />
+                                </div>
+                                <div class="md:col-span-1 flex justify-center items-center">
+                                    <button type="button" onclick="removeEducation(this)" class="text-red-500 hover:text-red-700">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addEducation()" class="mt-2 text-sm text-purple-600 hover:text-purple-800">
+                            + 学歴を追加
+                        </button>
+                    </div>
+
+                    <!-- Work History -->
+                    <div>
+                        <h3 class="font-semibold text-slate-700 mb-3">職歴 (Work History)</h3>
+                        <div id="work-list" class="space-y-3">
+                            <div class="work-item grid grid-cols-1 md:grid-cols-12 gap-3 p-3 bg-slate-50 rounded-lg">
+                                <div class="md:col-span-2">
+                                    <input type="text" class="work-from w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="開始年月" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <input type="text" class="work-to w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="終了年月" />
+                                </div>
+                                <div class="md:col-span-4">
+                                    <input type="text" class="work-company w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="会社名" />
+                                </div>
+                                <div class="md:col-span-3">
+                                    <input type="text" class="work-position w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                                           placeholder="職位・業務内容" />
+                                </div>
+                                <div class="md:col-span-1 flex justify-center items-center">
+                                    <button type="button" onclick="removeWork(this)" class="text-red-500 hover:text-red-700">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addWork()" class="mt-2 text-sm text-purple-600 hover:text-purple-800">
+                            + 職歴を追加
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-2xl p-8 text-center">
+                <button type="submit" class="bg-white text-purple-700 font-bold text-lg px-12 py-4 rounded-xl hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <span class="text-2xl mr-2">📥</span>
+                    申請書を生成 (Generate Application)
+                </button>
+                <p class="text-purple-100 text-sm mt-4">
+                    Excel形式で申請書をダウンロードします
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-slate-400 text-sm py-8">
+        <p>UNS Visa Management System - 在留資格認定証明書交付申請書</p>
+        <p class="mt-1">© 2024 UNS株式会社</p>
+    </footer>
+
+    <script>
+        // Show/hide accompanying family details
+        document.getElementById('accompanying-family').addEventListener('change', function(e) {
+            const details = document.getElementById('accompanying-details');
+            details.style.display = e.target.value === '有' ? 'block' : 'none';
+        });
+
+        // Add education entry
+        function addEducation() {
+            const list = document.getElementById('education-list');
+            const item = document.createElement('div');
+            item.className = 'education-item grid grid-cols-1 md:grid-cols-12 gap-3 p-3 bg-slate-50 rounded-lg';
+            item.innerHTML = `
+                <div class="md:col-span-2">
+                    <input type="text" class="education-from w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="開始年月" />
+                </div>
+                <div class="md:col-span-2">
+                    <input type="text" class="education-to w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="終了年月" />
+                </div>
+                <div class="md:col-span-4">
+                    <input type="text" class="education-school w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="学校名" />
+                </div>
+                <div class="md:col-span-3">
+                    <input type="text" class="education-major w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="専攻" />
+                </div>
+                <div class="md:col-span-1 flex justify-center items-center">
+                    <button type="button" onclick="removeEducation(this)" class="text-red-500 hover:text-red-700">✕</button>
+                </div>
+            `;
+            list.appendChild(item);
+        }
+
+        function removeEducation(button) {
+            const items = document.querySelectorAll('.education-item');
+            if (items.length > 1) {
+                button.closest('.education-item').remove();
+            } else {
+                alert('最低1つの学歴項目が必要です');
+            }
+        }
+
+        // Add work history entry
+        function addWork() {
+            const list = document.getElementById('work-list');
+            const item = document.createElement('div');
+            item.className = 'work-item grid grid-cols-1 md:grid-cols-12 gap-3 p-3 bg-slate-50 rounded-lg';
+            item.innerHTML = `
+                <div class="md:col-span-2">
+                    <input type="text" class="work-from w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="開始年月" />
+                </div>
+                <div class="md:col-span-2">
+                    <input type="text" class="work-to w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="終了年月" />
+                </div>
+                <div class="md:col-span-4">
+                    <input type="text" class="work-company w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="会社名" />
+                </div>
+                <div class="md:col-span-3">
+                    <input type="text" class="work-position w-full border border-slate-300 rounded px-2 py-1 text-sm"
+                           placeholder="職位・業務内容" />
+                </div>
+                <div class="md:col-span-1 flex justify-center items-center">
+                    <button type="button" onclick="removeWork(this)" class="text-red-500 hover:text-red-700">✕</button>
+                </div>
+            `;
+            list.appendChild(item);
+        }
+
+        function removeWork(button) {
+            const items = document.querySelectorAll('.work-item');
+            if (items.length > 1) {
+                button.closest('.work-item').remove();
+            } else {
+                alert('最低1つの職歴項目が必要です');
+            }
+        }
+
+        // Collect education data
+        function collectEducation() {
+            const items = document.querySelectorAll('.education-item');
+            const education = [];
+            items.forEach(item => {
+                const from = item.querySelector('.education-from').value;
+                const to = item.querySelector('.education-to').value;
+                const school = item.querySelector('.education-school').value;
+                const major = item.querySelector('.education-major').value;
+                if (from || to || school || major) {
+                    education.push({ from, to, school, major });
+                }
+            });
+            return education;
+        }
+
+        // Collect work history data
+        function collectWorkHistory() {
+            const items = document.querySelectorAll('.work-item');
+            const work = [];
+            items.forEach(item => {
+                const from = item.querySelector('.work-from').value;
+                const to = item.querySelector('.work-to').value;
+                const company = item.querySelector('.work-company').value;
+                const position = item.querySelector('.work-position').value;
+                if (from || to || company || position) {
+                    work.push({ from, to, company, position });
+                }
+            });
+            return work;
+        }
+
+        // Form submission
+        document.getElementById('coe-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Collect all form data
+            const formData = {
+                // Applicant info
+                family_name: document.getElementById('family-name').value,
+                given_name: document.getElementById('given-name').value,
+                family_name_kanji: document.getElementById('family-name-kanji').value,
+                given_name_kanji: document.getElementById('given-name-kanji').value,
+                date_of_birth: document.getElementById('date-of-birth').value,
+                sex: document.getElementById('sex').value,
+                nationality: document.getElementById('nationality').value,
+                birthplace: document.getElementById('birthplace').value,
+                marital_status: document.getElementById('marital-status').value,
+                occupation: document.getElementById('occupation').value,
+                home_address: document.getElementById('home-address').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+
+                // Passport info
+                passport_number: document.getElementById('passport-number').value,
+                passport_expiration: document.getElementById('passport-expiration').value,
+                passport_country: document.getElementById('passport-country').value,
+
+                // Entry plan
+                entry_purpose: document.getElementById('entry-purpose').value,
+                stay_period: document.getElementById('stay-period').value,
+                planned_entry_date: document.getElementById('planned-entry-date').value,
+                accompanying_family: document.getElementById('accompanying-family').value,
+                accompanying_info: document.getElementById('accompanying-info').value,
+
+                // UNS (Inviting organization)
+                uns_name: document.getElementById('uns-name').value,
+                uns_corp_number: document.getElementById('uns-corp-number').value,
+                uns_address: document.getElementById('uns-address').value,
+                uns_phone: document.getElementById('uns-phone').value,
+                uns_representative: document.getElementById('uns-representative').value,
+                uns_business: document.getElementById('uns-business').value,
+                uns_employees: document.getElementById('uns-employees').value,
+
+                // Haken-saki (Dispatch destination)
+                haken_name: document.getElementById('haken-name').value,
+                haken_phone: document.getElementById('haken-phone').value,
+                haken_address: document.getElementById('haken-address').value,
+                haken_contact: document.getElementById('haken-contact').value,
+                haken_department: document.getElementById('haken-department').value,
+                job_description: document.getElementById('job-description').value,
+
+                // Education & Work history
+                education: collectEducation(),
+                work_history: collectWorkHistory()
+            };
+
+            console.log('Form data:', formData);
+
+            try {
+                // Call API to generate Excel
+                const response = await fetch('/api/visa/coe/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    // Download the Excel file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `COE_${formData.family_name}_${formData.given_name}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    alert('申請書を生成しました！');
+                } else {
+                    const error = await response.json();
+                    alert('エラー: ' + (error.detail || 'Failed to generate application'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('申請書の生成中にエラーが発生しました。\n\nAPI endpoint /api/visa/coe/generate がまだ実装されていない可能性があります。');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default entry purpose
+            document.getElementById('entry-purpose').value = '技術・人文知識・国際業務';
+
+            // Set minimum date for planned entry (today)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('planned-entry-date').min = today;
+
+            console.log('COE form initialized');
+        });
+    </script>
+</body>
+</html>

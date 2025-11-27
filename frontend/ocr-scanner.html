@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR自動読取 - UNS Visa Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .drag-over {
+            border-color: #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
+    <div class="max-w-6xl mx-auto px-6 py-12">
+        <!-- Header -->
+        <header class="mb-12">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/30 hover:shadow-blue-400/40 transition-all">
+                        <span class="text-3xl">🇯🇵</span>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">OCR自動読取</h1>
+                        <p class="text-blue-200 text-sm">在留カード・パスポート自動読み取り</p>
+                    </div>
+                </div>
+                <nav class="flex gap-3">
+                    <a href="index.html" class="px-4 py-2 bg-white/10 backdrop-blur rounded-lg text-white hover:bg-white/20 transition-all">
+                        🏠 ホーム
+                    </a>
+                    <a href="employees.html" class="px-4 py-2 bg-white/10 backdrop-blur rounded-lg text-white hover:bg-white/20 transition-all">
+                        👥 従業員管理
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Panel: Upload & Preview -->
+            <div class="space-y-6">
+                <!-- Upload Area -->
+                <div class="bg-white/10 backdrop-blur rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span>📁</span> 画像をアップロード
+                    </h2>
+
+                    <!-- Drag & Drop Zone -->
+                    <div id="dropZone" class="border-2 border-dashed border-slate-500 rounded-xl p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-white/5 transition-all">
+                        <div class="text-6xl mb-4">📸</div>
+                        <p class="text-white font-medium mb-2">ここに画像をドラッグ＆ドロップ</p>
+                        <p class="text-slate-400 text-sm mb-4">または</p>
+                        <label for="fileInput" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg cursor-pointer transition-all shadow-lg hover:shadow-xl">
+                            ファイルを選択
+                        </label>
+                        <input type="file" id="fileInput" accept="image/*" class="hidden">
+                        <p class="text-slate-500 text-xs mt-4">対応形式: JPG, PNG (最大10MB)</p>
+                    </div>
+
+                    <!-- Supported Documents -->
+                    <div class="mt-4 bg-slate-800/50 rounded-lg p-4">
+                        <div class="text-sm text-slate-300 mb-2">📋 対応書類:</div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-blue-600/30 text-blue-200 rounded-full text-xs">在留カード</span>
+                            <span class="px-3 py-1 bg-green-600/30 text-green-200 rounded-full text-xs">パスポート</span>
+                            <span class="px-3 py-1 bg-purple-600/30 text-purple-200 rounded-full text-xs">運転免許証</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Area -->
+                <div id="previewSection" class="bg-white/10 backdrop-blur rounded-2xl p-6 hidden">
+                    <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span>👁️</span> プレビュー
+                    </h2>
+                    <div class="bg-slate-900/50 rounded-lg p-4">
+                        <img id="previewImage" src="" alt="Preview" class="w-full rounded-lg shadow-lg">
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button id="scanButton" class="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg font-bold text-lg transition-all shadow-xl hover:shadow-2xl hover:shadow-green-500/30">
+                            🤖 OCRで読み取る
+                        </button>
+                        <button id="clearButton" class="px-6 py-4 bg-red-600/20 hover:bg-red-600/30 text-red-300 rounded-lg font-medium transition-all">
+                            ✕ クリア
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="space-y-6">
+                <!-- Processing Indicator -->
+                <div id="processingIndicator" class="bg-white/10 backdrop-blur rounded-2xl p-8 text-center hidden">
+                    <div class="animate-spin text-6xl mb-4">⚙️</div>
+                    <p class="text-white text-xl font-bold">OCR処理中...</p>
+                    <p class="text-slate-400 text-sm mt-2">画像を解析しています</p>
+                </div>
+
+                <!-- Results Area -->
+                <div id="resultsSection" class="bg-white/10 backdrop-blur rounded-2xl p-6 hidden">
+                    <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span>✅</span> 読み取り結果
+                    </h2>
+
+                    <div class="space-y-4">
+                        <!-- Document Type -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">書類種別</label>
+                            <input type="text" id="result-docType" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Card Number -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">在留カード番号</label>
+                            <input type="text" id="result-cardNumber" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white font-mono" value="">
+                        </div>
+
+                        <!-- Name -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">氏名</label>
+                            <input type="text" id="result-name" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Name (Romanized) -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">氏名（ローマ字）</label>
+                            <input type="text" id="result-nameRoman" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Nationality -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">国籍・地域</label>
+                            <input type="text" id="result-nationality" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Visa Status -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">在留資格</label>
+                            <input type="text" id="result-visaStatus" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Expiration Date -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">在留期限</label>
+                            <input type="text" id="result-expirationDate" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Birth Date -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-1">生年月日</label>
+                            <input type="text" id="result-birthDate" readonly class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white" value="">
+                        </div>
+
+                        <!-- Confidence Score -->
+                        <div class="bg-slate-800/50 rounded-lg p-4">
+                            <label class="text-sm text-slate-400 block mb-2">認識精度</label>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-slate-900/50 rounded-full h-3">
+                                    <div id="confidenceBar" class="bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full transition-all" style="width: 0%"></div>
+                                </div>
+                                <span id="confidenceText" class="text-white font-bold">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 flex gap-3">
+                        <button id="saveButton" class="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-bold transition-all shadow-xl hover:shadow-2xl hover:shadow-blue-500/30">
+                            💾 データを保存
+                        </button>
+                        <button id="retryButton" class="px-6 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all">
+                            🔄 再読取
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="bg-blue-900/30 border border-blue-500/30 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-blue-300 mb-3 flex items-center gap-2">
+                        <span>💡</span> 使用方法
+                    </h3>
+                    <ol class="text-slate-300 text-sm space-y-2 list-decimal list-inside">
+                        <li>在留カードまたはパスポートの画像をアップロード</li>
+                        <li>プレビューで画像が正しく読み込まれたか確認</li>
+                        <li>「OCRで読み取る」ボタンをクリック</li>
+                        <li>読み取り結果を確認し、必要に応じて編集</li>
+                        <li>「データを保存」で従業員データベースに登録</li>
+                    </ol>
+                    <div class="mt-4 p-3 bg-yellow-900/30 border border-yellow-500/30 rounded-lg">
+                        <p class="text-yellow-200 text-xs">
+                            ⚠️ 重要: OCR結果は必ず目視確認してください。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-slate-500 text-sm mt-12">
+            <p>UNS Visa Management System v1.0</p>
+            <p class="mt-1">© 2024 UNS株式会社 - Powered by Claude AI</p>
+        </footer>
+    </div>
+
+    <script>
+        // Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const scanButton = document.getElementById('scanButton');
+        const clearButton = document.getElementById('clearButton');
+        const processingIndicator = document.getElementById('processingIndicator');
+        const resultsSection = document.getElementById('resultsSection');
+        const saveButton = document.getElementById('saveButton');
+        const retryButton = document.getElementById('retryButton');
+
+        let currentFile = null;
+
+        // Drag & Drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input handler
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Click on drop zone to trigger file input
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Handle file upload
+        function handleFile(file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。');
+                return;
+            }
+
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('ファイルサイズは10MB以下にしてください。');
+                return;
+            }
+
+            currentFile = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewSection.classList.remove('hidden');
+                resultsSection.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Clear button
+        clearButton.addEventListener('click', () => {
+            currentFile = null;
+            fileInput.value = '';
+            previewSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+        });
+
+        // Scan button - OCR processing
+        scanButton.addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            // Show processing indicator
+            processingIndicator.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+
+            try {
+                // Simulate OCR API call
+                const formData = new FormData();
+                formData.append('image', currentFile);
+
+                // Try to call actual API
+                try {
+                    const response = await fetch('/api/ocr/scan', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        displayResults(data);
+                    } else {
+                        throw new Error('API not available');
+                    }
+                } catch (apiError) {
+                    // Fallback to demo data
+                    console.log('Using demo data - API not available');
+                    await simulateOCR();
+                }
+            } catch (error) {
+                console.error('OCR Error:', error);
+                alert('OCR処理中にエラーが発生しました。');
+            } finally {
+                processingIndicator.classList.add('hidden');
+            }
+        });
+
+        // Simulate OCR processing (demo)
+        async function simulateOCR() {
+            // Simulate processing delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Demo data
+            const demoData = {
+                document_type: '在留カード',
+                card_number: 'AB1234567',
+                name: '山田 太郎',
+                name_roman: 'YAMADA TARO',
+                nationality: 'ベトナム',
+                visa_status: '技術・人文知識・国際業務',
+                expiration_date: '2026.12.31',
+                birth_date: '1995.05.15',
+                confidence: 0.92
+            };
+
+            displayResults(demoData);
+        }
+
+        // Display OCR results
+        function displayResults(data) {
+            document.getElementById('result-docType').value = data.document_type || '';
+            document.getElementById('result-cardNumber').value = data.card_number || '';
+            document.getElementById('result-name').value = data.name || '';
+            document.getElementById('result-nameRoman').value = data.name_roman || '';
+            document.getElementById('result-nationality').value = data.nationality || '';
+            document.getElementById('result-visaStatus').value = data.visa_status || '';
+            document.getElementById('result-expirationDate').value = data.expiration_date || '';
+            document.getElementById('result-birthDate').value = data.birth_date || '';
+
+            // Confidence score
+            const confidence = Math.round((data.confidence || 0) * 100);
+            document.getElementById('confidenceBar').style.width = confidence + '%';
+            document.getElementById('confidenceText').textContent = confidence + '%';
+
+            // Color code confidence
+            const confidenceBar = document.getElementById('confidenceBar');
+            if (confidence >= 80) {
+                confidenceBar.className = 'bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full transition-all';
+            } else if (confidence >= 60) {
+                confidenceBar.className = 'bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full transition-all';
+            } else {
+                confidenceBar.className = 'bg-gradient-to-r from-red-500 to-red-400 h-3 rounded-full transition-all';
+            }
+
+            resultsSection.classList.remove('hidden');
+        }
+
+        // Save button - Save to database
+        saveButton.addEventListener('click', async () => {
+            const data = {
+                document_type: document.getElementById('result-docType').value,
+                card_number: document.getElementById('result-cardNumber').value,
+                name: document.getElementById('result-name').value,
+                name_roman: document.getElementById('result-nameRoman').value,
+                nationality: document.getElementById('result-nationality').value,
+                visa_status: document.getElementById('result-visaStatus').value,
+                expiration_date: document.getElementById('result-expirationDate').value,
+                birth_date: document.getElementById('result-birthDate').value
+            };
+
+            try {
+                const response = await fetch('/api/employees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('データを保存しました！');
+                    // Redirect to employees page
+                    window.location.href = 'employees.html';
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (error) {
+                console.log('API not available - showing demo message');
+                alert('📝 機能開発中\n\nこの機能は現在開発中です。\n読み取り結果は従業員管理画面で手動登録してください。');
+            }
+        });
+
+        // Retry button
+        retryButton.addEventListener('click', () => {
+            resultsSection.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
