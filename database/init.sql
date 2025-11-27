@@ -793,15 +793,18 @@ $$ LANGUAGE plpgsql;
 -- DATOS INICIALES
 -- ============================================================
 
--- Insertar tu empresa (UNS) como派遣元
+-- Insertar tu empresa (UNS) como???
+INSERT INTO haken_moto_company (
+    company_name, company_name_kana, corporation_number,
+    employment_insurance_number, worker_dispatch_license,
     postal_code, prefecture, city, address_line1, full_address,
     telephone, email, representative_name, business_type_name
 ) VALUES (
-    'UNS株式会社', 'ユーエヌエス', '1234567890123',
-    '12345678901', '派23-300000',
-    '486-0000', '愛知県', '春日井市', '柏井町1-1', '愛知県春日井市柏井町1-1',
-    '0568-00-0000', 'info@uns.co.jp', '代表 太郎', '人材派遣業'
-);
+    'UNS????', '??????', '1234567890123',
+    '12345678901', '?23-300000',
+    '486-0000', '???', '????', '???1-1', '??????????1-1',
+    '0568-00-0000', 'info@uns.co.jp', '?? ??', '?????'
+) ON CONFLICT (corporation_number) DO NOTHING;
 
 -- Insertar usuarios por defecto
 -- Admin: admin / admin123
@@ -825,31 +828,35 @@ VALUES (
     'staff', 
     true
 ) ON CONFLICT (username) DO NOTHING;
+INSERT INTO haken_moto_company (
+    company_name, company_name_kana, corporation_number,
+    employment_insurance_number, worker_dispatch_license,
+    postal_code, prefecture, city, address_line1, full_address,
     telephone, capital, annual_sales, total_employees, foreign_employees,
     representative_name, representative_title, business_type_code, business_type_name,
     immigration_category
 ) VALUES (
-    '株式会社UNS',
-    'カブシキガイシャユーエヌエス',
+    '????UNS',
+    '??????????????',
     '1234567890123',
     '23456789012',
-    '派23-123456',
+    '?23-123456',
     '480-0000',
-    '愛知県',
-    '春日井市',
-    '○○町1-2-3',
-    '愛知県春日井市○○町1-2-3',
+    '???',
+    '????',
+    '???1-2-3',
+    '??????????1-2-3',
     '0568-00-0000',
     10000000,
     100000000,
     50,
     30,
-    '金城 太郎',
-    '代表取締役',
+    '?? ??',
+    '?????',
     '91',
-    '労働者派遣業',
+    '??????',
     3
-) ON CONFLICT DO NOTHING;
+) ON CONFLICT (corporation_number) DO NOTHING;
 
 -- Insertar usuario admin
 INSERT INTO users (username, email, password_hash, full_name, role)

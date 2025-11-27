@@ -553,10 +553,11 @@ async def dashboard_stats():
 @app.get("/health")
 async def health():
     try:
-        async with db_pool.acquire() as conn:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
             await conn.fetchval("SELECT 1")
         return {"status": "ok", "db": "connected"}
-    except:
+    except Exception:
         return {"status": "error", "db": "disconnected"}
 
 if __name__ == "__main__":

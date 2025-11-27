@@ -1,7 +1,7 @@
 # ============================================================
 # UNS VISA MANAGEMENT SYSTEM
 # Docker Compose Configuration
-# 
+#
 # ⚠️  PUERTOS PERSONALIZADOS (evitar conflictos con otras apps)
 # ============================================================
 
@@ -14,24 +14,24 @@ services:
   # ============================================================
   db:
     image: postgres:15-alpine
-    container_name: uns-visa-db
+    container_name: uns-visa-db-custom
     restart: unless-stopped
     environment:
       POSTGRES_DB: uns_visa
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-unsvisapassword2024}
     volumes:
-      - uns_postgres_data:/var/lib/postgresql/data
+      - uns_visa_postgres_data_custom:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     ports:
-      - "5433:5432"  # ⚠️ Puerto externo 5433
+      - "5433:5432" # ⚠️ Puerto externo 5433
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - uns-visa-network
+      - uns-visa-network-custom
 
   # ============================================================
   # Backend API (FastAPI)
@@ -41,7 +41,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: uns-visa-api
+    image: uns-visa-api-image-custom
+    container_name: uns-visa-api-custom
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-unsvisapassword2024}@db:5432/uns_visa
@@ -49,7 +50,7 @@ services:
       DEBUG: ${DEBUG:-false}
       API_PORT: 8100
     ports:
-      - "8100:8000"  # ⚠️ Puerto externo 8100
+      - "8100:8000" # ⚠️ Puerto externo 8100
     depends_on:
       db:
         condition: service_healthy
@@ -59,7 +60,7 @@ services:
       - ./generated:/app/generated
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     networks:
-      - uns-visa-network
+      - uns-visa-network-custom
 
   # ============================================================
   # Frontend (Nginx serving static files)
@@ -67,11 +68,11 @@ services:
   # ============================================================
   frontend:
     image: nginx:alpine
-    container_name: uns-visa-frontend
+    container_name: uns-visa-frontend-custom
     restart: unless-stopped
     ports:
-      - "8180:80"    # ⚠️ Puerto HTTP 8180
-      - "8143:443"   # ⚠️ Puerto HTTPS 8143
+      - "8180:80" # ⚠️ Puerto HTTP 8180
+      - "8143:443" # ⚠️ Puerto HTTPS 8143
     volumes:
       - ./frontend:/usr/share/nginx/html
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
@@ -79,7 +80,7 @@ services:
     depends_on:
       - api
     networks:
-      - uns-visa-network
+      - uns-visa-network-custom
 
   # ============================================================
   # Redis (para caché y sesiones)
@@ -87,14 +88,14 @@ services:
   # ============================================================
   redis:
     image: redis:7-alpine
-    container_name: uns-visa-redis
+    container_name: uns-visa-redis-custom
     restart: unless-stopped
     ports:
-      - "6380:6379"  # ⚠️ Puerto externo 6380
+      - "6380:6379" # ⚠️ Puerto externo 6380
     volumes:
-      - uns_redis_data:/data
+      - uns_visa_redis_data_custom:/data
     networks:
-      - uns-visa-network
+      - uns-visa-network-custom
 
   # ============================================================
   # Adminer (Database management UI)
@@ -102,24 +103,24 @@ services:
   # ============================================================
   adminer:
     image: adminer:latest
-    container_name: uns-visa-adminer
+    container_name: uns-visa-adminer-custom
     restart: unless-stopped
     ports:
-      - "8181:8080"  # ⚠️ Puerto externo 8181
+      - "8181:8080" # ⚠️ Puerto externo 8181
     depends_on:
       - db
     environment:
       ADMINER_DEFAULT_SERVER: db
     networks:
-      - uns-visa-network
+      - uns-visa-network-custom
 
 volumes:
-  uns_postgres_data:
-    name: uns-visa-postgres-data
-  uns_redis_data:
-    name: uns-visa-redis-data
+  uns_visa_postgres_data_custom:
+    name: uns-visa-postgres-data-custom
+  uns_visa_redis_data_custom:
+    name: uns-visa-redis-data-custom
 
 networks:
-  uns-visa-network:
-    name: uns-visa-network
+  uns-visa-network-custom:
+    name: uns-visa-network-custom
     driver: bridge

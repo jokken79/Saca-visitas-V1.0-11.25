@@ -88,7 +88,28 @@
             </div>
         </div>
 
-        <!-- Table -->
+        <!-- Drag & drop JSON import -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Importar fábricas desde JSON</h3>
+                    <p class="text-sm text-slate-500">Arrastra `factories_index.json` y los archivos de `D:\\JPUNS-Claude.6.5.0\\BASEDATEJP\\config\\factories\\*.json`.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="json-file-btn" class="px-3 py-2 border rounded-lg hover:bg-slate-50 text-sm">Elegir archivos</button>
+                    <button id="json-help-btn" class="px-3 py-2 bg-slate-800 text-white rounded-lg text-sm" onclick="alert('1) Arrastra factories_index.json y los JSON de factories/*.json\\n2) Se envían a /api/haken-saki de inmediato; duplicados se omiten automáticamente'); return false;">¿Cómo funciona?</button>
+                </div>
+            </div>
+            <div id="json-dropzone" class="border-2 border-dashed border-slate-300 rounded-xl p-6 bg-slate-50 text-center text-slate-600 transition hover:border-orange-400 hover:bg-orange-50">
+                <p class="font-semibold mb-1">Suelta aquí los .json</p>
+                <p class="text-sm text-slate-500">Ruta local: D:\\JPUNS-Claude.6.5.0\\BASEDATEJP\\config\\factories_index.json y carpeta factories\\*</p>
+                <p class="text-xs text-slate-400 mt-1">Se ignoran registros duplicados (mismo法人番号 o mismo nombre+prefectura).</p>
+            </div>
+            <div id="json-import-log" class="text-xs text-slate-600 mt-2"></div>
+            <input id="json-file-input" type="file" accept=".json" multiple class="hidden">
+        </div>
+
+<!-- Table -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <table class="w-full">
                 <thead class="bg-slate-50 border-b">
@@ -489,6 +510,247 @@
             }
         }
 
+        function logImport(message, tone = 'info') {
+            const el = document.getElementById('json-import-log');
+            if (!el) return;
+            const color = tone === 'error' ? 'text-red-600' : tone === 'warn' ? 'text-amber-600' : 'text-slate-700';
+            const stamp = new Date().toLocaleTimeString();
+            el.innerHTML = `<div class="${color}">${stamp} - ${message}</div>` + el.innerHTML;
+        }
+
+        function normalizeFactories(data) {
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data.factories)) return data.factories;
+            if (Array.isArray(data.items)) return data.items;
+            if (data.company_name || data.name || data.factory_name) return [data];
+            return [];
+        }
+
+        function mapFactory(raw) {
+            const pick = (...keys) => keys.map(k => raw && raw[k]).find(Boolean) || null;
+            const nested = {
+                client: raw?.client_company || {},
+                plant: raw?.plant || {},
+                contact: raw?.client_company?.responsible_person || raw?.plant?.responsible_person || {},
+                contact2: raw?.client_company?.complaint_handler || {}
+            };
+
+            const company_name = pick('company_name', 'name', 'factory_name') || nested.client.name || nested.plant.name || 'N/A';
+            const corporation_number = pick('corporation_number');
+            const employment_insurance_number = pick('employment_insurance_number');
+            const telephone = pick('telephone', 'phone', 'tel') || nested.client.phone || nested.plant.phone || nested.contact.phone || nested.contact2.phone;
+            const contact_person = pick('contact_person', 'contact') || nested.contact.name || nested.contact2.name;
+            const contact_email = pick('contact_email', 'email', 'mail');
+            const postal_code = pick('postal_code');
+            const prefecture = pick('prefecture');
+            const city = pick('city');
+            const address_line1 = pick('address_line1', 'address1') || nested.client.address || nested.plant.address;
+            const address_line2 = pick('address_line2', 'address2');
+            const full_address = pick('full_address', 'address') || nested.client.address || nested.plant.address;
+            const business_type_name = pick('business_type_name', 'business');
+            const business_type_code = pick('business_type_code');
+            const industry_sector = pick('industry_sector');
+
+            return {
+                company_name,
+                branch_name: pick('branch_name'),
+                corporation_number,
+                employment_insurance_number,
+                telephone,
+                fax: pick('fax'),
+                contact_person,
+                contact_email,
+                postal_code,
+                prefecture,
+                city,
+                address_line1,
+                address_line2,
+                full_address: full_address || [prefecture, city, address_line1].filter(Boolean).join(' ') || null,
+                business_type_name,
+                business_type_code,
+                industry_sector,
+                contract_status: pick('contract_status') || 'active'
+            };
+        }
+
+
+        function isDuplicate(payload) {
+            return companies.some(c =>
+                (payload.corporation_number && c.corporation_number === payload.corporation_number) ||
+                (payload.company_name && c.company_name === payload.company_name && (!payload.prefecture || payload.prefecture === c.prefecture))
+            );
+        }
+
+        async function importFactoriesFromJson(content, sourceName) {
+            let parsed;
+            try {
+                parsed = JSON.parse(content);
+            } catch (err) {
+                throw new Error('JSON invalido: ' + err.message);
+            }
+
+            const list = normalizeFactories(parsed);
+            if (!list.length) {
+                throw new Error('No se encontraron elementos utilizables');
+            }
+
+            let ok = 0, skipped = 0, failed = 0;
+            for (const raw of list) {
+                const payload = mapFactory(raw);
+                if (!payload.company_name) { skipped++; continue; }
+                if (isDuplicate(payload)) { skipped++; continue; }
+                try {
+                    const res = await fetch('/api/haken-saki', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error(await res.text());
+                    ok++;
+                } catch (err) {
+                    failed++;
+                }
+            }
+            logImport(`OK ${sourceName}: ${ok} creados, ${skipped} omitidos, ${failed} con error`, failed ? 'warn' : 'info');
+            return true;
+        }
+
+        async function decodeAndImport(buffer, fileName) {
+            const encodings = ['utf-8', 'shift_jis'];
+            let lastErr = null;
+            for (const enc of encodings) {
+                try {
+                    const text = new TextDecoder(enc, { fatal: false }).decode(buffer);
+                    await importFactoriesFromJson(text, `${fileName} [${enc}]`);
+                    return true;
+                } catch (err) {
+                    lastErr = err;
+                }
+            }
+            logImport(`Error ${fileName}: ${lastErr?.message || 'No se pudo leer el JSON (UTF-8/SJIS)'}`, 'error');
+            return false;
+        }
+
+        function handleJsonFiles(fileList) {
+            const files = Array.from(fileList || []).filter(f => f.name.toLowerCase().endsWith('.json'));
+            if (!files.length) {
+                logImport('No se encontraron archivos JSON', 'warn');
+                return;
+            }
+            let remaining = files.length;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    await decodeAndImport(new Uint8Array(e.target.result), file.name);
+                    remaining -= 1;
+                    if (remaining === 0) loadCompanies();
+                };
+                reader.onerror = () => {
+                    const err = reader.error;
+                    const detail = err?.message || err?.name || 'lectura fallida';
+                    logImport(`Error ${file.name}: ${detail}`, 'error');
+                    remaining -= 1;
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+
+function handleJsonFiles(fileList) {
+    const files = Array.from(fileList || []).filter(f => f.name.toLowerCase().endsWith('.json'));
+    if (!files.length) {
+        logImport('No se encontraron archivos JSON', 'warn');
+        return;
+    }
+    let remaining = files.length;
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            await decodeAndImport(new Uint8Array(e.target.result), file.name);
+            remaining -= 1;
+            if (remaining === 0) loadCompanies();
+        };
+        reader.onerror = () => {
+            const err = reader.error;
+            const detail = err?.message || err?.name || 'lectura fallida';
+            logImport(`Error ${file.name}: ${detail}`, 'error');
+            remaining -= 1;
+        };
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function handleJsonFiles(fileList) {
+    const files = Array.from(fileList || []).filter(f => f.name.toLowerCase().endsWith('.json'));
+    if (!files.length) {
+        logImport('No se encontraron archivos JSON', 'warn');
+        return;
+    }
+    let remaining = files.length;
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            await decodeAndImport(new Uint8Array(e.target.result), file.name);
+            remaining -= 1;
+            if (remaining === 0) loadCompanies();
+        };
+        reader.onerror = () => {
+            const err = reader.error;
+            const detail = err?.message || err?.name || 'lectura fallida';
+            logImport(`? ${file.name}: ${detail}`, 'error');
+            remaining -= 1;
+        };
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function handleJsonFiles(fileList) {
+            const files = Array.from(fileList || []).filter(f => f.name.toLowerCase().endsWith('.json'));
+            if (!files.length) {
+                logImport('No se encontraron archivos JSON', 'warn');
+                return;
+            }
+            let remaining = files.length;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    await importFactoriesFromJson(e.target.result, file.name);
+                    remaining -= 1;
+                    if (remaining === 0) loadCompanies();
+                };
+                reader.onerror = () => {
+                    const err = reader.error;
+                    const detail = err?.message || err?.name || 'lectura fallida';
+                    logImport(`❌ ${file.name}: ${detail}`, 'error');
+                    remaining -= 1;
+                };
+                reader.readAsText(file, 'utf-8');
+            });
+        }
+
+        function initJsonImport() {
+            const drop = document.getElementById('json-dropzone');
+            const input = document.getElementById('json-file-input');
+            const btn = document.getElementById('json-file-btn');
+            if (!drop || !input || !btn) return;
+
+            ['dragenter', 'dragover'].forEach(evt => drop.addEventListener(evt, e => {
+                e.preventDefault();
+                drop.classList.add('border-orange-400', 'bg-orange-50');
+            }));
+            ['dragleave', 'drop'].forEach(evt => drop.addEventListener(evt, e => {
+                e.preventDefault();
+                drop.classList.remove('border-orange-400', 'bg-orange-50');
+            }));
+            drop.addEventListener('drop', e => handleJsonFiles(e.dataTransfer.files));
+            btn.addEventListener('click', e => { e.preventDefault(); input.click(); });
+            input.addEventListener('change', e => handleJsonFiles(e.target.files));
+
+            logImport('Arrastra factories_index.json y factories/*.json aquí para cargarlos', 'info');
+        }
+
+        initJsonImport();
         loadCompanies();
     </script>
 </body>
