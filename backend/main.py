@@ -550,6 +550,96 @@ async def dashboard_stats():
             "expiring_90_days": exp90
         }
 
+# ============================================================
+# ENDPOINTS - OCR
+# ============================================================
+
+@app.post("/api/ocr/scan", tags=["OCR"])
+async def ocr_scan(file: bytes = None):
+    """
+    OCRで在留カード・パスポートを読み取り
+    Scan residence card or passport using OCR
+
+    Note: This is a placeholder. Real OCR requires Claude Vision API or similar.
+    """
+    # Placeholder response - simulates OCR result
+    return {
+        "success": True,
+        "document_type": "residence_card",
+        "data": {
+            "residence_card_number": "",
+            "name": "",
+            "name_romaji": "",
+            "nationality": "",
+            "visa_status": "技術・人文知識・国際業務",
+            "expiration_date": "",
+            "date_of_birth": ""
+        },
+        "confidence": 0.0,
+        "message": "OCR機能は開発中です。手動で入力してください。"
+    }
+
+# ============================================================
+# ENDPOINTS - EXCEL GENERATION
+# ============================================================
+
+from fastapi.responses import StreamingResponse
+from excel_generator import VisaFormExcelGenerator, generate_visa_renewal_excel
+
+@app.post("/api/excel/generate", tags=["Excel"])
+async def generate_excel(data: dict):
+    """
+    在留期間更新許可申請書を生成
+    Generate visa renewal application form (Excel)
+    """
+    try:
+        excel_file = generate_visa_renewal_excel(data)
+
+        # Get employee name for filename
+        name = f"{data.get('family_name', '')}_{data.get('given_name', '')}"
+        filename = f"在留期間更新許可申請書_{name}.xlsx"
+
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{filename}"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Excel生成エラー: {str(e)}")
+
+@app.post("/api/visa/coe/generate", tags=["Excel"])
+async def generate_coe_excel(data: dict):
+    """
+    在留資格認定証明書交付申請書を生成
+    Generate Certificate of Eligibility application form (Excel)
+    """
+    try:
+        # Use the same generator but mark as COE type
+        generator = VisaFormExcelGenerator()
+
+        # Add COE-specific fields
+        data['form_type'] = 'coe'
+        data['submission_office'] = data.get('submission_office', '名古屋')
+
+        # Generate renewal form (COE format is similar)
+        excel_file = generator.generate_renewal_form(data)
+
+        # Get applicant name for filename
+        name = f"{data.get('family_name', '')}_{data.get('given_name', '')}"
+        filename = f"在留資格認定証明書交付申請書_{name}.xlsx"
+
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{filename}"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Excel生成エラー: {str(e)}")
+
 @app.get("/health")
 async def health():
     try:
