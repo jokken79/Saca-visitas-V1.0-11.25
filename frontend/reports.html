@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="ui-shell.js" defer></script>
     <style>
         body {
             font-family: 'Noto Sans JP', sans-serif;
@@ -15,19 +18,30 @@
     </style>
 </head>
 
-<body class="bg-slate-100 min-h-screen flex items-center justify-center">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md text-center">
-        <div class="text-6xl mb-4">📊</div>
-        <h1 class="text-2xl font-bold text-slate-800 mb-2">レポート機能</h1>
-        <p class="text-slate-600 mb-6">
-            詳細な統計レポート機能は準備中です。<br>
-            ダッシュボードの簡易統計をご利用ください。
-        </p>
-        <a href="index.html"
-            class="inline-block bg-slate-600 text-white px-6 py-3 rounded-lg hover:bg-slate-700 transition-colors">
-            ダッシュボードに戻る
-        </a>
-    </div>
+<body class="app-body">
+    <main class="page-container flex items-center justify-center min-h-screen">
+        <div class="glass-panel p-10 max-w-lg text-center">
+            <div class="text-5xl mb-4 text-blue-200"><i data-lucide="bar-chart-3"></i></div>
+            <h1 class="text-2xl font-bold text-white mb-2">レポート機能</h1>
+            <p class="text-slate-300 mb-6">
+                詳細な統計レポート機能は準備中です。<br>
+                ダッシュボードの簡易統計をご利用ください。
+            </p>
+            <a href="index.html"
+                class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
+                ダッシュボードに戻る
+            </a>
+        </div>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAppShell({ active: 'reports', headline: 'レポート', subtitle: '統計ビューはまもなく提供予定' });
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+            renderFooter();
+        });
+    </script>
 </body>
 
 </html>
