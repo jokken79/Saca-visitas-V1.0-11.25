@@ -288,7 +288,12 @@
                     <div class="border rounded-lg p-4">
                         <h3 class="font-bold text-slate-700 mb-4">📞 連絡先</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="md:col-span-2">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">郵便番号</label>
+                                <input type="text" id="postal-code"
+                                       class="w-full border rounded-lg px-3 py-2" placeholder="123-4567">
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-slate-600 mb-1">住所</label>
                                 <input type="text" id="address"
                                        class="w-full border rounded-lg px-3 py-2" placeholder="愛知県名古屋市...">
@@ -580,6 +585,7 @@
             document.getElementById('period-of-stay').value = emp.current_period_of_stay || '';
             document.getElementById('expiration-date').value = emp.current_expiration_date || '';
             document.getElementById('residence-card').value = emp.residence_card_number || '';
+            document.getElementById('postal-code').value = emp.postal_code_japan || '';
             document.getElementById('address').value = emp.address_japan || '';
             document.getElementById('telephone').value = emp.telephone_japan || '';
             document.getElementById('cellular').value = emp.cellular_phone || '';
@@ -603,6 +609,7 @@
                 current_period_of_stay: document.getElementById('period-of-stay').value,
                 current_expiration_date: document.getElementById('expiration-date').value,
                 residence_card_number: document.getElementById('residence-card').value.toUpperCase(),
+                postal_code_japan: document.getElementById('postal-code').value,
                 address_japan: document.getElementById('address').value,
                 telephone_japan: document.getElementById('telephone').value,
                 cellular_phone: document.getElementById('cellular').value
