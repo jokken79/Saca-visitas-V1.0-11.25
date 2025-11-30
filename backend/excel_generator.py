@@ -213,12 +213,12 @@ class VisaFormExcelGenerator:
         self._add_form_row_wide(ws, row, '15', '犯罪を理由とする処分を受けたことの有無', 
                                'Criminal record', criminal_display)
         
-        # Aplicar bordes a todas las celdas
+        # Aplicar estilos por defecto
         for r in range(1, row + 2):
             for c in range(1, 9):
                 cell = ws.cell(row=r, column=c)
-                if cell.value:
-                    cell.font = cell.font or self.normal_font
+                if not cell.font:
+                    cell.font = self.normal_font
     
     def _create_applicant_sheet_2(self, wb: Workbook, data: Dict):
         """申請人等作成用２ - Familia y educación"""

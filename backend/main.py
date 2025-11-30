@@ -229,6 +229,21 @@ class VisaApplication(BaseModel):
     requested_period: str
     reason: str
 
+class EmploymentContractCreate(BaseModel):
+    employee_id: int
+    haken_moto_id: int = 1
+    contract_start_date: date
+    salary_amount: int
+    salary_type: str = "monthly"
+
+class DispatchAssignmentCreate(BaseModel):
+    employee_id: int
+    haken_saki_id: int = 1
+    dispatch_start_date: date
+
+class HakenSakiCreate(BaseModel):
+    company_name: str
+
 # ============================================================
 # ENDPOINTS - EMPLOYEES
 # ============================================================
@@ -334,49 +349,6 @@ async def update_employee(id: int, emp: EmployeeCreate):
         
         return dict(row)
 
-@app.delete("/api/employees/{id}", tags=["Employees"])
-async def delete_employee(id: int):
-    """従業員削除 (論理削除)"""
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        result = await conn.execute("UPDATE employees SET employment_status = 'inactive' WHERE id = $1", id)
-        if result == "DELETE 0": # UPDATE 0 in this case but checking row count
-             # asyncpg execute returns "UPDATE N"
-             if result == "UPDATE 0":
-                raise HTTPException(404, "従業員が見つかりません")
-        return {"message": "削除しました"}
-
-@app.put("/api/employees/{id}", tags=["Employees"])
-async def update_employee(id: int, emp: EmployeeCreate):
-    """従業員更新"""
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        # Check if exists
-        exists = await conn.fetchval("SELECT 1 FROM employees WHERE id = $1", id)
-        if not exists:
-            raise HTTPException(404, "従業員が見つかりません")
-
-        # Update
-        row = await conn.fetchrow("""
-            UPDATE employees SET
-                family_name = $2, given_name = $3, family_name_kanji = $4, given_name_kanji = $5,
-                nationality = $6, date_of_birth = $7, sex = $8, marital_status = $9, place_of_birth = $10, home_town_city = $11,
-                postal_code_japan = $12, address_japan = $13, telephone_japan = $14, cellular_phone = $15, email = $16,
-                passport_number = $17, passport_expiration = $18, passport_issue_country = $19,
-                current_visa_status = $20, current_period_of_stay = $21, current_expiration_date = $22, residence_card_number = $23,
-                school_location = $24, school_name = $25, graduation_date = $26, major_field = $27,
-                has_it_qualification = $28, it_qualification_name = $29, japanese_level = $30, has_criminal_record = $31
-            WHERE id = $1
-            RETURNING *
-        """, id, emp.family_name, emp.given_name, emp.family_name_kanji, emp.given_name_kanji,
-            emp.nationality, emp.date_of_birth, emp.sex, emp.marital_status, emp.place_of_birth, emp.home_town_city,
-            emp.postal_code_japan, emp.address_japan, emp.telephone_japan, emp.cellular_phone, emp.email,
-            emp.passport_number, emp.passport_expiration, emp.passport_issue_country,
-            emp.current_visa_status, emp.current_period_of_stay, emp.current_expiration_date, emp.residence_card_number,
-            emp.school_location, emp.school_name, emp.graduation_date, emp.major_field,
-            emp.has_it_qualification, emp.it_qualification_name, emp.japanese_level, emp.has_criminal_record)
-        
-        return dict(row)
 
 @app.delete("/api/employees/{id}", tags=["Employees"])
 async def delete_employee(id: int):
@@ -406,9 +378,45 @@ async def get_by_card(card_number: str):
             raise HTTPException(404, "従業員が見つかりません")
         return dict(row)
 
+@app.post("/api/employment-contracts", tags=["Employment Contracts"])
+async def create_employment_contract(contract: EmploymentContractCreate):
+    """雇用契約を作成"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            INSERT INTO employment_contracts (employee_id, haken_moto_id, contract_start_date, salary_amount, salary_type)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        """, contract.employee_id, contract.haken_moto_id, contract.contract_start_date, contract.salary_amount, contract.salary_type)
+        return dict(row)
+
+@app.post("/api/dispatch-assignments", tags=["Dispatch Assignments"])
+async def create_dispatch_assignment(assignment: DispatchAssignmentCreate):
+    """派遣契約を作成"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            INSERT INTO dispatch_assignments (employee_id, haken_saki_id, dispatch_start_date)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        """, assignment.employee_id, assignment.haken_saki_id, assignment.dispatch_start_date)
+        return dict(row)
+
 # ============================================================
 # ENDPOINTS - OCR
 # ============================================================
+
+@app.post("/api/haken-saki", tags=["Haken Saki"])
+async def create_haken_saki(haken_saki: HakenSakiCreate):
+    """派遣先を作成"""
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            INSERT INTO haken_saki_company (company_name)
+            VALUES ($1)
+            RETURNING *
+        """, haken_saki.company_name)
+        return dict(row)
 
 @app.post("/api/ocr/import", tags=["OCR"])
 async def import_ocr(data: OCRData):
