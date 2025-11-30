@@ -448,7 +448,8 @@
                         <td class="px-4 py-3 text-center">
                             <div class="flex justify-center gap-2">
                                 <button onclick="openModal('edit', ${emp.id})" class="text-blue-600 hover:text-blue-800" title="編集">✏️</button>
-                                <button onclick="generateForm(${emp.id})" class="text-green-600 hover:text-green-800" title="申請書作成">📄</button>
+                                <button onclick="generateForm(${emp.id})" class="text-green-600 hover:text-green-800" title="更新申請書">📄 更新</button>
+                                <button onclick="generateCoeForm(${emp.id})" class="text-purple-600 hover:text-purple-800" title="認定申請書">📄 COE</button>
                                 <button onclick="deleteEmployee(${emp.id})" class="text-red-600 hover:text-red-800" title="削除">🗑️</button>
                             </div>
                         </td>
@@ -694,6 +695,37 @@
                 }
             } catch (error) {
                 console.error('Error exporting form:', error);
+                alert('エクスポート中にエラーが発生しました');
+            }
+        }
+
+        async function generateCoeForm(id) {
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/export/visa-coe/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `visa_coe_${id}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'エクスポートに失敗しました');
+                }
+            } catch (error) {
+                console.error('Error exporting COE form:', error);
                 alert('エクスポート中にエラーが発生しました');
             }
         }
