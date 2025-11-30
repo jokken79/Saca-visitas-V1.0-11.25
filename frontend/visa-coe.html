@@ -20,17 +20,42 @@
 
 <body class="app-body">
     <main class="page-container flex items-center justify-center min-h-screen">
-        <div class="glass-panel p-10 max-w-lg text-center">
-            <div class="text-5xl mb-4 text-purple-200"><i data-lucide="file-badge"></i></div>
-            <h1 class="text-2xl font-bold text-white mb-2">認定申請書の作成</h1>
-            <p class="text-slate-300 mb-6">
-                この機能は現在開発中です。<br>
-                現在は更新申請書のみ対応しています。
-            </p>
-            <a href="index.html"
-                class="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors shadow-lg">
-                ダッシュボードに戻る
-            </a>
+        <div class="glass-panel p-10 max-w-2xl">
+            <div class="flex items-start gap-6">
+                <div class="flex-shrink-0 text-5xl text-purple-200"><i data-lucide="file-badge"></i></div>
+                <div class="space-y-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white mb-2">認定申請書の作成</h1>
+                        <p class="text-slate-300 leading-relaxed">
+                            在留資格認定証明書交付申請書（COE）は従業員一覧から直接ダウンロードできます。
+                            対象者の行にある <span class="inline-block bg-slate-900/50 px-2 py-1 rounded">📄 COE</span>
+                            ボタンをクリックしてください。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-purple-500/30 rounded-xl p-4 text-sm text-slate-200 space-y-3">
+                        <div class="font-semibold text-purple-200">手順</div>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>従業員一覧ページに移動します</li>
+                            <li>申請したい従業員の行を探します</li>
+                            <li><span class="inline-block bg-slate-900/50 px-2 py-1 rounded">📄 COE</span> ボタンをクリックしてExcelを取得します</li>
+                        </ol>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <a href="employees.html"
+                            class="inline-flex items-center gap-2 bg-purple-600 text-white px-5 py-3 rounded-lg hover:bg-purple-700 transition-colors shadow-lg">
+                            <i data-lucide="users"></i>
+                            従業員一覧へ移動
+                        </a>
+                        <a href="index.html"
+                            class="inline-flex items-center gap-2 bg-slate-700 text-white px-5 py-3 rounded-lg hover:bg-slate-600 transition-colors">
+                            <i data-lucide="layout-dashboard"></i>
+                            ダッシュボードに戻る
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
     <script>
