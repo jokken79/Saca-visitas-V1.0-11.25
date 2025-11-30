@@ -253,7 +253,7 @@ async def create_employee(emp: EmployeeCreate):
     """従業員を作成"""
     if not emp.employee_code:
         pool = await get_db_pool()
-    async with pool.acquire() as conn:
+        async with pool.acquire() as conn:
             count = await conn.fetchval("SELECT COUNT(*) FROM employees")
             emp.employee_code = f"UNS-{date.today():%Y%m}-{count+1:04d}"
     
@@ -356,10 +356,8 @@ async def delete_employee(id: int):
     pool = await get_db_pool()
     async with pool.acquire() as conn:
         result = await conn.execute("UPDATE employees SET employment_status = 'inactive' WHERE id = $1", id)
-        if result == "DELETE 0": # UPDATE 0 in this case but checking row count
-             # asyncpg execute returns "UPDATE N"
-             if result == "UPDATE 0":
-                raise HTTPException(404, "従業員が見つかりません")
+        if result == "UPDATE 0":  # asyncpg execute returns "UPDATE N"
+            raise HTTPException(404, "従業員が見つかりません")
         return {"message": "削除しました"}
 
 @app.get("/api/employees/card/{card_number}", tags=["Employees"])
@@ -458,7 +456,7 @@ async def import_ocr(data: OCRData):
     existing = None
     if result.get('residence_card_number'):
         pool = await get_db_pool()
-    async with pool.acquire() as conn:
+        async with pool.acquire() as conn:
             existing = await conn.fetchrow(
                 "SELECT id FROM employees WHERE residence_card_number = $1",
                 result['residence_card_number'].upper()
