@@ -6,39 +6,56 @@
     <title>UNS Visa Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="ui-shell.js" defer></script>
     <style>
         body { font-family: 'Noto Sans JP', sans-serif; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
-    <div class="max-w-6xl mx-auto px-6 py-12">
+<body class="app-body">
+    <main class="page-container">
         <!-- Header -->
-        <header class="text-center mb-16">
+        <header class="glass-panel p-10 text-center mb-12">
             <div class="inline-flex items-center gap-4 mb-6">
                 <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/30">
                     <span class="text-4xl">🇯🇵</span>
                 </div>
             </div>
-            <h1 class="text-5xl font-bold text-white mb-4">UNS Visa Management System</h1>
-            <p class="text-xl text-blue-200">派遣会社向けビザ管理システム</p>
-            <p class="text-slate-400 mt-2">技術・人文知識・国際業務 | 在留期間更新・認定・変更</p>
+            <div class="flex flex-col items-center gap-2">
+                <div class="badge-soft">精密管理 / 自動警告</div>
+                <h1 class="text-4xl md:text-5xl font-bold text-white">UNS Visa Management System</h1>
+                <p class="text-lg text-blue-100">派遣会社向けビザ管理システム</p>
+                <p class="text-slate-300">技術・人文知識・国際業務 | 在留期間更新・認定・変更</p>
+            </div>
         </header>
 
         <!-- Quick Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                <i data-lucide="activity" class="w-5 h-5 text-blue-300"></i>
+                <span>ダッシュボード指標</span>
+            </h2>
+            <span id="data-mode" class="badge-soft hidden"></span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            <div class="glass-panel p-5 text-center">
+                <div class="flex justify-center mb-2"><i data-lucide="users" class="text-blue-300"></i></div>
                 <div class="text-3xl font-bold text-white" id="stat-employees">--</div>
                 <div class="text-sm text-slate-300">従業員数</div>
             </div>
-            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+            <div class="glass-panel p-5 text-center">
+                <div class="flex justify-center mb-2"><i data-lucide="bell" class="text-yellow-300"></i></div>
                 <div class="text-3xl font-bold text-yellow-400" id="stat-expiring">--</div>
                 <div class="text-sm text-slate-300">期限90日以内</div>
             </div>
-            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+            <div class="glass-panel p-5 text-center">
+                <div class="flex justify-center mb-2"><i data-lucide="alert-triangle" class="text-red-300"></i></div>
                 <div class="text-3xl font-bold text-red-400" id="stat-critical">--</div>
                 <div class="text-sm text-slate-300">期限30日以内</div>
             </div>
-            <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+            <div class="glass-panel p-5 text-center">
+                <div class="flex justify-center mb-2"><i data-lucide="clock-3" class="text-emerald-300"></i></div>
                 <div class="text-3xl font-bold text-green-400" id="stat-pending">--</div>
                 <div class="text-sm text-slate-300">申請中</div>
             </div>
@@ -48,7 +65,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             <!-- OCR Scanner -->
             <a href="ocr-scanner.html" class="group bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 hover:from-blue-500 hover:to-blue-600 transition-all shadow-xl hover:shadow-2xl hover:shadow-blue-500/30">
-                <div class="text-4xl mb-4">🤖</div>
+                <div class="text-4xl mb-4"><i data-lucide="scan" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">OCR自動読取</h3>
                 <p class="text-blue-100 text-sm">在留カード・パスポートを自動読み取り</p>
                 <div class="mt-4 text-blue-200 group-hover:text-white transition-colors">
@@ -58,7 +75,7 @@
 
             <!-- Renewal Form -->
             <a href="visa-renewal.html" class="group bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 hover:from-green-500 hover:to-green-600 transition-all shadow-xl hover:shadow-2xl hover:shadow-green-500/30">
-                <div class="text-4xl mb-4">🔄</div>
+                <div class="text-4xl mb-4"><i data-lucide="refresh-ccw" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">更新申請書</h3>
                 <p class="text-green-100 text-sm">在留期間更新許可申請書を作成</p>
                 <div class="mt-4 text-green-200 group-hover:text-white transition-colors">
@@ -68,7 +85,7 @@
 
             <!-- COE Form -->
             <a href="visa-coe.html" class="group bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6 hover:from-purple-500 hover:to-purple-600 transition-all shadow-xl hover:shadow-2xl hover:shadow-purple-500/30">
-                <div class="text-4xl mb-4">📄</div>
+                <div class="text-4xl mb-4"><i data-lucide="file-badge" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">認定申請書</h3>
                 <p class="text-purple-100 text-sm">在留資格認定証明書交付申請書</p>
                 <div class="mt-4 text-purple-200 group-hover:text-white transition-colors">
@@ -78,7 +95,7 @@
 
             <!-- Employee List -->
             <a href="employees.html" class="group bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl p-6 hover:from-slate-500 hover:to-slate-600 transition-all shadow-xl">
-                <div class="text-4xl mb-4">👥</div>
+                <div class="text-4xl mb-4"><i data-lucide="users" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">従業員管理</h3>
                 <p class="text-slate-300 text-sm">従業員一覧・登録・編集</p>
                 <div class="mt-4 text-slate-300 group-hover:text-white transition-colors">
@@ -88,7 +105,7 @@
 
             <!-- Company Management -->
             <a href="haken-saki.html" class="group bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl p-6 hover:from-orange-500 hover:to-orange-600 transition-all shadow-xl">
-                <div class="text-4xl mb-4">🏭</div>
+                <div class="text-4xl mb-4"><i data-lucide="factory" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">派遣先管理</h3>
                 <p class="text-orange-100 text-sm">派遣先会社の登録・管理</p>
                 <div class="mt-4 text-orange-200 group-hover:text-white transition-colors">
@@ -98,7 +115,7 @@
 
             <!-- Reports -->
             <a href="reports.html" class="group bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-2xl p-6 hover:from-cyan-500 hover:to-cyan-600 transition-all shadow-xl">
-                <div class="text-4xl mb-4">📊</div>
+                <div class="text-4xl mb-4"><i data-lucide="bar-chart-3" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">レポート</h3>
                 <p class="text-cyan-100 text-sm">期限管理・統計レポート</p>
                 <div class="mt-4 text-cyan-200 group-hover:text-white transition-colors">
@@ -108,7 +125,7 @@
 
             <!-- Data Import -->
             <a href="import.html" class="group bg-gradient-to-br from-pink-600 to-pink-700 rounded-2xl p-6 hover:from-pink-500 hover:to-pink-600 transition-all shadow-xl">
-                <div class="text-4xl mb-4">📤</div>
+                <div class="text-4xl mb-4"><i data-lucide="upload-cloud" class="w-8 h-8"></i></div>
                 <h3 class="text-xl font-bold text-white mb-2">データインポート</h3>
                 <p class="text-pink-100 text-sm">派遣先(JSON)・従業員(Excel)を一括登録</p>
                 <div class="mt-4 text-pink-200 group-hover:text-white transition-colors">
@@ -118,31 +135,31 @@
         </div>
 
         <!-- System Services -->
-        <div class="bg-white/5 backdrop-blur rounded-2xl p-6 mb-12">
-            <h2 class="text-xl font-bold text-white mb-4">🔧 システムサービス</h2>
+        <div class="glass-panel p-6 mb-12">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="server-cog"></i><span>システムサービス</span></h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-slate-800/50 rounded-lg p-4">
+                <div class="bg-slate-800/50 rounded-lg p-4 border border-white/5">
                     <div class="text-sm text-slate-400 mb-1">API Server</div>
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         <a href="/docs" class="text-white hover:text-blue-400">localhost:8100</a>
                     </div>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-4">
+                <div class="bg-slate-800/50 rounded-lg p-4 border border-white/5">
                     <div class="text-sm text-slate-400 mb-1">Database</div>
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         <span class="text-white">PostgreSQL:5433</span>
                     </div>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-4">
+                <div class="bg-slate-800/50 rounded-lg p-4 border border-white/5">
                     <div class="text-sm text-slate-400 mb-1">DB Admin</div>
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         <a href="http://localhost:8181" target="_blank" class="text-white hover:text-blue-400">Adminer:8181</a>
                     </div>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-4">
+                <div class="bg-slate-800/50 rounded-lg p-4 border border-white/5">
                     <div class="text-sm text-slate-400 mb-1">Cache</div>
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -154,36 +171,93 @@
 
         <!-- Alerts Section -->
         <div class="bg-red-900/30 border border-red-500/30 rounded-2xl p-6 mb-12" id="alerts-section" style="display: none;">
-            <h2 class="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
-                <span>⚠️</span> 期限間近の従業員
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-red-400 flex items-center gap-2">
+                    <i data-lucide="alert-octagon"></i> 期限間近の従業員
+                </h2>
+                <span id="alerts-mode" class="badge-soft hidden text-xs"></span>
+            </div>
             <div id="alerts-list" class="space-y-2">
                 <!-- Alerts will be loaded here -->
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="text-center text-slate-500 text-sm">
-            <p>UNS Visa Management System v1.0</p>
-            <p class="mt-1">© 2024 UNS株式会社 - Powered by Claude AI</p>
-        </footer>
-    </div>
+    </main>
 
     <script>
+        const dataModeBadge = document.getElementById('data-mode');
+        const alertsModeBadge = document.getElementById('alerts-mode');
+
+        const demoStats = {
+            total_employees: 128,
+            expiring_90_days: 7,
+            expiring_30_days: 3,
+            pending_applications: 4
+        };
+
+        const demoAlerts = [
+            { family_name: '佐藤', given_name: '太郎', nationality: 'JPN', days_remaining: 18 },
+            { family_name: 'Nguyen', given_name: 'Thao', nationality: 'VNM', days_remaining: 24 },
+            { family_name: 'Chen', given_name: 'Wei', nationality: 'TWN', days_remaining: 27 }
+        ];
+
+        function setBadgeMode(badge, label, tone = 'info') {
+            if (!badge) return;
+            const toneClasses = {
+                success: 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30',
+                warning: 'bg-amber-500/20 text-amber-100 border-amber-400/30',
+                info: 'bg-blue-500/20 text-blue-100 border-blue-400/30'
+            };
+            badge.className = `badge-soft ${toneClasses[tone] || ''}`;
+            badge.textContent = label;
+            badge.classList.remove('hidden');
+        }
+
+        function renderStats(data, isDemo = false) {
+            document.getElementById('stat-employees').textContent = data.total_employees ?? '--';
+            document.getElementById('stat-expiring').textContent = data.expiring_90_days ?? '--';
+            document.getElementById('stat-critical').textContent = data.expiring_30_days ?? '--';
+            document.getElementById('stat-pending').textContent = data.pending_applications ?? '--';
+            setBadgeMode(dataModeBadge, isDemo ? 'デモ表示 (API未接続)' : 'API連携: リアルタイム', isDemo ? 'warning' : 'success');
+        }
+
+        function renderAlerts(alerts = [], isDemo = false) {
+            const alertsSection = document.getElementById('alerts-section');
+            const alertsList = document.getElementById('alerts-list');
+            if (!alerts || alerts.length === 0) {
+                alertsSection.style.display = 'none';
+                alertsModeBadge.classList.add('hidden');
+                return;
+            }
+
+            alertsSection.style.display = 'block';
+            setBadgeMode(alertsModeBadge, isDemo ? 'デモサンプル' : 'APIから取得', isDemo ? 'warning' : 'success');
+            alertsList.innerHTML = alerts.slice(0, 5).map(alert => `
+                <div class="bg-red-950/50 rounded-lg p-3 flex justify-between items-center">
+                    <div>
+                        <span class="text-white font-medium">${alert.family_name} ${alert.given_name}</span>
+                        <span class="text-red-300 text-sm ml-2">(${alert.nationality})</span>
+                    </div>
+                    <div class="text-red-400 font-bold">
+                        残り${alert.days_remaining}日
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // Load stats from API
         async function loadStats() {
             try {
                 const response = await fetch('/api/stats');
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('stat-employees').textContent = data.total_employees || 0;
-                    document.getElementById('stat-expiring').textContent = data.expiring_90_days || 0;
-                    document.getElementById('stat-critical').textContent = data.expiring_30_days || 0;
-                    document.getElementById('stat-pending').textContent = data.pending_applications || 0;
+                    renderStats(data, false);
+                    return;
                 }
             } catch (e) {
                 console.log('API not available yet');
             }
+            renderStats(demoStats, true);
         }
 
         // Load alerts
@@ -192,31 +266,24 @@
                 const response = await fetch('/api/alerts/expiring?days=30');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.alerts && data.alerts.length > 0) {
-                        document.getElementById('alerts-section').style.display = 'block';
-                        const alertsList = document.getElementById('alerts-list');
-                        alertsList.innerHTML = data.alerts.slice(0, 5).map(alert => `
-                            <div class="bg-red-950/50 rounded-lg p-3 flex justify-between items-center">
-                                <div>
-                                    <span class="text-white font-medium">${alert.family_name} ${alert.given_name}</span>
-                                    <span class="text-red-300 text-sm ml-2">(${alert.nationality})</span>
-                                </div>
-                                <div class="text-red-400 font-bold">
-                                    残り${alert.days_remaining}日
-                                </div>
-                            </div>
-                        `).join('');
-                    }
+                    renderAlerts(data.alerts || [], false);
+                    return;
                 }
             } catch (e) {
                 console.log('Alerts API not available');
             }
+            renderAlerts(demoAlerts, true);
         }
 
         // Load on page load
         document.addEventListener('DOMContentLoaded', () => {
+            renderAppShell({ active: 'dashboard', headline: 'ダッシュボード', subtitle: 'リアルタイム統計とショートカット' });
             loadStats();
             loadAlerts();
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+            renderFooter();
         });
     </script>
 </body>

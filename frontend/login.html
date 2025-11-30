@@ -6,6 +6,9 @@
     <title>ログイン - UNS Visa Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="ui-shell.js" defer></script>
     <style>
         body { font-family: 'Noto Sans JP', sans-serif; }
         .animate-gradient {
@@ -19,7 +22,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 animate-gradient">
+<body class="app-body min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 animate-gradient">
     <div class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md">
             <!-- Logo -->
@@ -231,6 +234,7 @@
 
         // Check if already logged in
         document.addEventListener('DOMContentLoaded', () => {
+            renderAppShell({ active: 'dashboard', headline: 'ログイン', subtitle: 'セキュアアクセス' });
             const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
             if (token) {
                 // Verify token is still valid
@@ -250,6 +254,10 @@
                     // API not available, continue with login
                 });
             }
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+            renderFooter();
         });
 
         // Keyboard shortcuts
