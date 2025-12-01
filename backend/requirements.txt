@@ -34,6 +34,9 @@ python-multipart==0.0.6
 # Date handling
 python-dateutil==2.8.2
 
+# OCR & AI
+anthropic==0.39.0
+
 # Testing
 pytest==7.4.4
 pytest-asyncio==0.23.3

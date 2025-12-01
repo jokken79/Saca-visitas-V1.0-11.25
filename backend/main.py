@@ -11,6 +11,7 @@ from datetime import date, datetime
 import asyncpg
 import re
 import os
+from ocr_service import OCRService
 
 # Import routers
 try:
@@ -221,6 +222,18 @@ class HakenSaki(BaseModel):
 class OCRData(BaseModel):
     zairyu_card: Optional[dict] = None
     passport: Optional[dict] = None
+
+class OCRExtractRequest(BaseModel):
+    image_base64: str
+    document_type: str = Field(..., pattern='^(zairyu_card|passport)$')
+    employee_id: Optional[int] = None
+
+class OCRExtractResponse(BaseModel):
+    success: bool
+    document_type: Optional[str] = None
+    extracted_data: Optional[dict] = None
+    missing_fields: Optional[dict] = None
+    error: Optional[str] = None
 
 class VisaApplication(BaseModel):
     employee_id: int
@@ -552,29 +565,138 @@ async def dashboard_stats():
 # ============================================================
 
 @app.post("/api/ocr/scan", tags=["OCR"])
-async def ocr_scan(file: bytes = None):
+async def ocr_scan(request: OCRExtractRequest):
     """
     OCRで在留カード・パスポートを読み取り
-    Scan residence card or passport using OCR
+    Scan residence card or passport using Claude Vision OCR
 
-    Note: This is a placeholder. Real OCR requires Claude Vision API or similar.
+    - document_type: "zairyu_card" or "passport"
+    - image_base64: Base64 encoded image (without data:image/... prefix)
+    - employee_id: Optional - if provided, will show which fields are missing
     """
-    # Placeholder response - simulates OCR result
-    return {
+    # Extraer datos de la imagen
+    result = OCRService.extract_from_image(
+        request.image_base64,
+        request.document_type
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error", "OCR処理に失敗しました")
+        )
+
+    response = {
         "success": True,
-        "document_type": "residence_card",
-        "data": {
-            "residence_card_number": "",
-            "name": "",
-            "name_romaji": "",
-            "nationality": "",
-            "visa_status": "技術・人文知識・国際業務",
-            "expiration_date": "",
-            "date_of_birth": ""
-        },
-        "confidence": 0.0,
-        "message": "OCR機能は開発中です。手動で入力してください。"
+        "document_type": request.document_type,
+        "extracted_data": result["extracted_data"]
     }
+
+    # Si se proporciona employee_id, mostrar campos faltantes
+    if request.employee_id:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            emp_row = await conn.fetchrow(
+                "SELECT * FROM employees WHERE id = $1",
+                request.employee_id
+            )
+            if emp_row:
+                employee_data = dict(emp_row)
+                response["missing_fields"] = OCRService.get_missing_fields(employee_data)
+                response["merged_data"] = OCRService.merge_ocr_data(
+                    employee_data,
+                    result["extracted_data"],
+                    only_fill_missing=True
+                )
+
+    return response
+
+
+@app.get("/api/employees/{id}/missing-fields", tags=["Employees"])
+async def get_employee_missing_fields(id: int):
+    """
+    従業員の未入力フィールドを取得
+    Get missing/empty fields for an employee
+    """
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        emp_row = await conn.fetchrow("SELECT * FROM employees WHERE id = $1", id)
+        if not emp_row:
+            raise HTTPException(404, "従業員が見つかりません")
+
+        employee_data = dict(emp_row)
+        missing_fields = OCRService.get_missing_fields(employee_data)
+
+        # Contar campos faltantes
+        missing_count = sum(1 for f in missing_fields.values() if f["is_missing"])
+        total_count = len(missing_fields)
+
+        return {
+            "employee_id": id,
+            "employee_name": f"{employee_data.get('family_name', '')} {employee_data.get('given_name', '')}",
+            "missing_count": missing_count,
+            "total_fields": total_count,
+            "completion_percentage": round((total_count - missing_count) / total_count * 100, 1),
+            "fields": missing_fields
+        }
+
+
+@app.post("/api/employees/{id}/fill-from-ocr", tags=["Employees"])
+async def fill_employee_from_ocr(id: int, ocr_data: dict):
+    """
+    OCRデータで従業員情報を更新（空フィールドのみ）
+    Update employee with OCR data (only fill empty fields)
+    """
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Obtener datos actuales
+        emp_row = await conn.fetchrow("SELECT * FROM employees WHERE id = $1", id)
+        if not emp_row:
+            raise HTTPException(404, "従業員が見つかりません")
+
+        employee_data = dict(emp_row)
+
+        # Combinar con datos OCR (solo campos vacíos)
+        merged = OCRService.merge_ocr_data(employee_data, ocr_data, only_fill_missing=True)
+
+        # Construir UPDATE dinámico solo para campos que cambiaron
+        updates = []
+        values = [id]
+        param_count = 1
+
+        fields_to_update = [
+            'family_name', 'given_name', 'family_name_kanji', 'given_name_kanji',
+            'nationality', 'date_of_birth', 'sex', 'passport_number', 'passport_expiration',
+            'passport_issue_country', 'current_visa_status', 'current_period_of_stay',
+            'current_expiration_date', 'residence_card_number', 'address_japan',
+            'cellular_phone', 'place_of_birth', 'home_town_city'
+        ]
+
+        for field in fields_to_update:
+            old_val = employee_data.get(field)
+            new_val = merged.get(field)
+
+            # Solo actualizar si era vacío y ahora tiene valor
+            if (old_val is None or old_val == '') and new_val and new_val != '':
+                param_count += 1
+                updates.append(f"{field} = ${param_count}")
+                values.append(new_val)
+
+        if not updates:
+            return {
+                "message": "更新するフィールドがありません",
+                "updated_fields": []
+            }
+
+        # Ejecutar UPDATE
+        query = f"UPDATE employees SET {', '.join(updates)} WHERE id = $1 RETURNING *"
+        updated_row = await conn.fetchrow(query, *values)
+
+        return {
+            "message": "従業員情報を更新しました",
+            "updated_fields": [u.split(' = ')[0] for u in updates],
+            "employee": dict(updated_row)
+        }
 
 # ============================================================
 # ENDPOINTS - EXCEL GENERATION
