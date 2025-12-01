@@ -1,47 +1,544 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR自動読取 - UNS Visa System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="ui-shell.js" defer></script>
     <style>
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
         }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .field-missing { background: #fef3c7; }
+        .field-filled { background: #d1fae5; }
+        .field-new { background: #dbeafe; border: 2px solid #3b82f6; }
     </style>
 </head>
-
 <body class="app-body">
-    <main class="page-container flex items-center justify-center min-h-screen">
-        <div class="glass-panel p-10 max-w-lg text-center">
-            <div class="text-5xl mb-4 text-blue-200"><i data-lucide="scan"></i></div>
-            <h1 class="text-2xl font-bold text-white mb-2">OCR自動読取</h1>
-            <p class="text-slate-300 mb-6">
-                この機能は現在開発中です。<br>
-                次回のアップデートで利用可能になります。
-            </p>
-            <a href="index.html"
-                class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
-                ダッシュボードに戻る
-            </a>
+    <main class="page-container">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">OCR自動読取</h1>
+                <p class="text-slate-500">在留カード・パスポートからデータを抽出</p>
+            </div>
+        </div>
+
+        <!-- Step 1: Select Employee -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-bold text-slate-700 mb-4">
+                <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full mr-2">1</span>
+                従業員を選択
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">従業員ID または 名前で検索</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="employee-search"
+                               class="flex-1 border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                               placeholder="ID番号 または 名前を入力...">
+                        <button onclick="searchEmployee()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            検索
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">または 新規作成</label>
+                    <a href="employees.html" class="block text-center bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        + 新規従業員登録
+                    </a>
+                </div>
+            </div>
+
+            <!-- Employee Info -->
+            <div id="employee-info" class="hidden mt-6 p-4 bg-slate-50 rounded-lg">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800" id="emp-name">-</h3>
+                        <p class="text-slate-500" id="emp-code">-</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold" id="completion-rate">0%</div>
+                        <p class="text-sm text-slate-500">データ完成度</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-sm text-slate-600 mb-2">未入力フィールド:</p>
+                    <div id="missing-fields" class="flex flex-wrap gap-2">
+                        <!-- Missing fields badges -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Upload Documents -->
+        <div id="step-upload" class="bg-white rounded-xl shadow-sm p-6 mb-6 opacity-50 pointer-events-none">
+            <h2 class="text-lg font-bold text-slate-700 mb-4">
+                <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full mr-2">2</span>
+                書類をアップロード
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Zairyu Card Upload -->
+                <div>
+                    <h3 class="font-medium text-slate-700 mb-2">在留カード</h3>
+                    <div id="drop-zairyu" class="drop-zone rounded-lg p-8 text-center cursor-pointer"
+                         onclick="document.getElementById('file-zairyu').click()">
+                        <div id="preview-zairyu" class="hidden">
+                            <img id="img-zairyu" class="max-h-48 mx-auto mb-2 rounded">
+                            <p class="text-green-600 font-medium">✓ アップロード完了</p>
+                        </div>
+                        <div id="placeholder-zairyu">
+                            <div class="text-4xl mb-2">🪪</div>
+                            <p class="text-slate-500">クリックまたはドラッグ</p>
+                            <p class="text-sm text-slate-400">在留カードの表面</p>
+                        </div>
+                    </div>
+                    <input type="file" id="file-zairyu" class="hidden" accept="image/*"
+                           onchange="handleFileSelect(this, 'zairyu')">
+                    <button id="btn-scan-zairyu" onclick="scanDocument('zairyu_card')"
+                            class="hidden w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                        🔍 在留カードをスキャン
+                    </button>
+                </div>
+
+                <!-- Passport Upload -->
+                <div>
+                    <h3 class="font-medium text-slate-700 mb-2">パスポート</h3>
+                    <div id="drop-passport" class="drop-zone rounded-lg p-8 text-center cursor-pointer"
+                         onclick="document.getElementById('file-passport').click()">
+                        <div id="preview-passport" class="hidden">
+                            <img id="img-passport" class="max-h-48 mx-auto mb-2 rounded">
+                            <p class="text-green-600 font-medium">✓ アップロード完了</p>
+                        </div>
+                        <div id="placeholder-passport">
+                            <div class="text-4xl mb-2">🛂</div>
+                            <p class="text-slate-500">クリックまたはドラッグ</p>
+                            <p class="text-sm text-slate-400">パスポートの顔写真ページ</p>
+                        </div>
+                    </div>
+                    <input type="file" id="file-passport" class="hidden" accept="image/*"
+                           onchange="handleFileSelect(this, 'passport')">
+                    <button id="btn-scan-passport" onclick="scanDocument('passport')"
+                            class="hidden w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                        🔍 パスポートをスキャン
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Review & Save -->
+        <div id="step-review" class="bg-white rounded-xl shadow-sm p-6 mb-6 hidden">
+            <h2 class="text-lg font-bold text-slate-700 mb-4">
+                <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full mr-2">3</span>
+                抽出データの確認
+            </h2>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2 px-3">フィールド</th>
+                            <th class="text-left py-2 px-3">現在の値</th>
+                            <th class="text-left py-2 px-3">OCR抽出値</th>
+                            <th class="text-center py-2 px-3">適用</th>
+                        </tr>
+                    </thead>
+                    <tbody id="extracted-data">
+                        <!-- Extracted data rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-4 mt-6">
+                <button onclick="resetOCR()" class="px-6 py-2 border rounded-lg hover:bg-slate-50">
+                    リセット
+                </button>
+                <button onclick="saveOCRData()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                    選択したデータを保存
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+            <div class="bg-white rounded-xl p-8 text-center">
+                <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p class="text-lg font-medium" id="loading-text">OCR処理中...</p>
+                <p class="text-sm text-slate-500">Claude Vision APIで解析しています</p>
+            </div>
         </div>
     </main>
+
     <script>
+        const API_BASE = '/api';
+        let currentEmployee = null;
+        let missingFields = {};
+        let extractedData = {};
+        let uploadedImages = { zairyu: null, passport: null };
+
+        // Auth check
+        function checkAuth() {
+            const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return null;
+            }
+            return token;
+        }
+
+        // Search Employee
+        async function searchEmployee() {
+            const token = checkAuth();
+            if (!token) return;
+
+            const search = document.getElementById('employee-search').value.trim();
+            if (!search) {
+                alert('従業員IDまたは名前を入力してください');
+                return;
+            }
+
+            try {
+                // Try by ID first
+                let response;
+                if (/^\d+$/.test(search)) {
+                    response = await fetch(`${API_BASE}/employees/${search}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } else {
+                    // Search by name in the list
+                    response = await fetch(`${API_BASE}/employees`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const employees = await response.json();
+                        const found = employees.find(e =>
+                            `${e.family_name} ${e.given_name}`.toLowerCase().includes(search.toLowerCase()) ||
+                            (e.employee_code && e.employee_code.toLowerCase().includes(search.toLowerCase()))
+                        );
+                        if (found) {
+                            response = await fetch(`${API_BASE}/employees/${found.id}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                        } else {
+                            alert('従業員が見つかりません');
+                            return;
+                        }
+                    }
+                }
+
+                if (!response.ok) {
+                    alert('従業員が見つかりません');
+                    return;
+                }
+
+                currentEmployee = await response.json();
+                await loadMissingFields();
+                showEmployeeInfo();
+                enableUploadStep();
+
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('検索中にエラーが発生しました');
+            }
+        }
+
+        async function loadMissingFields() {
+            const token = checkAuth();
+            if (!token || !currentEmployee) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/employees/${currentEmployee.id}/missing-fields`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    missingFields = data.fields;
+                    document.getElementById('completion-rate').textContent = `${data.completion_percentage}%`;
+
+                    // Show missing fields badges
+                    const container = document.getElementById('missing-fields');
+                    container.innerHTML = '';
+                    for (const [field, info] of Object.entries(missingFields)) {
+                        if (info.is_missing) {
+                            container.innerHTML += `<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">${info.label}</span>`;
+                        }
+                    }
+                    if (container.innerHTML === '') {
+                        container.innerHTML = '<span class="text-green-600">すべてのフィールドが入力済みです</span>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading missing fields:', error);
+            }
+        }
+
+        function showEmployeeInfo() {
+            document.getElementById('employee-info').classList.remove('hidden');
+            document.getElementById('emp-name').textContent =
+                `${currentEmployee.family_name || ''} ${currentEmployee.given_name || ''}`;
+            document.getElementById('emp-code').textContent = currentEmployee.employee_code || 'コードなし';
+        }
+
+        function enableUploadStep() {
+            const step = document.getElementById('step-upload');
+            step.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        // File handling
+        function handleFileSelect(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result.split(',')[1];
+                uploadedImages[type] = base64;
+
+                // Show preview
+                document.getElementById(`placeholder-${type}`).classList.add('hidden');
+                document.getElementById(`preview-${type}`).classList.remove('hidden');
+                document.getElementById(`img-${type}`).src = e.target.result;
+                document.getElementById(`btn-scan-${type === 'zairyu' ? 'zairyu' : 'passport'}`).classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Drag and drop
+        ['zairyu', 'passport'].forEach(type => {
+            const dropZone = document.getElementById(`drop-${type}`);
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    document.getElementById(`file-${type}`).files = e.dataTransfer.files;
+                    handleFileSelect(document.getElementById(`file-${type}`), type);
+                }
+            });
+        });
+
+        // OCR Scan
+        async function scanDocument(documentType) {
+            const token = checkAuth();
+            if (!token) return;
+
+            const imageKey = documentType === 'zairyu_card' ? 'zairyu' : 'passport';
+            const imageBase64 = uploadedImages[imageKey];
+
+            if (!imageBase64) {
+                alert('画像をアップロードしてください');
+                return;
+            }
+
+            showLoading(`${documentType === 'zairyu_card' ? '在留カード' : 'パスポート'}をスキャン中...`);
+
+            try {
+                const response = await fetch(`${API_BASE}/ocr/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image_base64: imageBase64,
+                        document_type: documentType,
+                        employee_id: currentEmployee?.id
+                    })
+                });
+
+                hideLoading();
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(error.detail || 'OCR処理に失敗しました');
+                    return;
+                }
+
+                const result = await response.json();
+
+                // Merge with existing extracted data
+                if (result.extracted_data) {
+                    extractedData = { ...extractedData, ...result.extracted_data };
+                }
+
+                showExtractedData();
+
+            } catch (error) {
+                hideLoading();
+                console.error('OCR error:', error);
+                alert('OCR処理中にエラーが発生しました');
+            }
+        }
+
+        function showExtractedData() {
+            document.getElementById('step-review').classList.remove('hidden');
+
+            const fieldLabels = {
+                family_name: '姓 (ローマ字)',
+                given_name: '名 (ローマ字)',
+                family_name_kanji: '姓 (漢字)',
+                given_name_kanji: '名 (漢字)',
+                nationality: '国籍',
+                date_of_birth: '生年月日',
+                sex: '性別',
+                passport_number: '旅券番号',
+                passport_expiration: '旅券有効期限',
+                passport_issue_country: '発行国',
+                current_visa_status: '在留資格',
+                current_period_of_stay: '在留期間',
+                current_expiration_date: '在留期限',
+                residence_card_number: '在留カード番号',
+                address_japan: '住所',
+                place_of_birth: '出生地'
+            };
+
+            const tbody = document.getElementById('extracted-data');
+            tbody.innerHTML = '';
+
+            for (const [field, label] of Object.entries(fieldLabels)) {
+                const currentVal = currentEmployee?.[field] || '';
+                const ocrVal = extractedData[field] || '';
+
+                if (!ocrVal && !currentVal) continue; // Skip if both empty
+
+                const isMissing = !currentVal || currentVal === '';
+                const hasNewData = ocrVal && ocrVal !== '' && ocrVal !== currentVal;
+
+                let rowClass = '';
+                if (isMissing && hasNewData) rowClass = 'field-new';
+                else if (isMissing) rowClass = 'field-missing';
+                else rowClass = 'field-filled';
+
+                tbody.innerHTML += `
+                    <tr class="${rowClass}">
+                        <td class="py-2 px-3 font-medium">${label}</td>
+                        <td class="py-2 px-3">${currentVal || '<span class="text-slate-400">未入力</span>'}</td>
+                        <td class="py-2 px-3 ${hasNewData ? 'font-bold text-blue-600' : ''}">${ocrVal || '-'}</td>
+                        <td class="py-2 px-3 text-center">
+                            ${hasNewData ? `<input type="checkbox" data-field="${field}" data-value="${ocrVal}" checked class="w-4 h-4">` : '-'}
+                        </td>
+                    </tr>
+                `;
+            }
+
+            if (tbody.innerHTML === '') {
+                tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-500">抽出されたデータがありません</td></tr>';
+            }
+        }
+
+        async function saveOCRData() {
+            const token = checkAuth();
+            if (!token || !currentEmployee) return;
+
+            // Collect checked fields
+            const dataToSave = {};
+            document.querySelectorAll('#extracted-data input[type="checkbox"]:checked').forEach(cb => {
+                dataToSave[cb.dataset.field] = cb.dataset.value;
+            });
+
+            if (Object.keys(dataToSave).length === 0) {
+                alert('保存するデータがありません');
+                return;
+            }
+
+            showLoading('データを保存中...');
+
+            try {
+                const response = await fetch(`${API_BASE}/employees/${currentEmployee.id}/fill-from-ocr`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSave)
+                });
+
+                hideLoading();
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(error.detail || '保存に失敗しました');
+                    return;
+                }
+
+                const result = await response.json();
+                alert(`${result.updated_fields.length}件のフィールドを更新しました`);
+
+                // Reload employee data
+                currentEmployee = result.employee;
+                await loadMissingFields();
+                showExtractedData();
+
+            } catch (error) {
+                hideLoading();
+                console.error('Save error:', error);
+                alert('保存中にエラーが発生しました');
+            }
+        }
+
+        function resetOCR() {
+            extractedData = {};
+            uploadedImages = { zairyu: null, passport: null };
+
+            ['zairyu', 'passport'].forEach(type => {
+                document.getElementById(`placeholder-${type}`).classList.remove('hidden');
+                document.getElementById(`preview-${type}`).classList.add('hidden');
+                document.getElementById(`btn-scan-${type === 'zairyu' ? 'zairyu' : 'passport'}`).classList.add('hidden');
+                document.getElementById(`file-${type}`).value = '';
+            });
+
+            document.getElementById('step-review').classList.add('hidden');
+        }
+
+        function showLoading(text) {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        // Init
         document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
             renderAppShell({ active: 'ocr', headline: 'OCR自動読取', subtitle: '在留カード・パスポート読取' });
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
                 window.lucide.createIcons();
             }
             renderFooter();
+
+            // Check for employee ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const empId = urlParams.get('employee_id');
+            if (empId) {
+                document.getElementById('employee-search').value = empId;
+                searchEmployee();
+            }
         });
     </script>
 </body>
-
 </html>
