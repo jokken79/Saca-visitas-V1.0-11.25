@@ -9,6 +9,7 @@ from database import get_db_pool
 from excel_generator import generate_visa_renewal_excel, VisaFormExcelGenerator
 from datetime import date
 import io
+import asyncpg
 
 router = APIRouter(prefix="/api/export", tags=["Export"])
 
@@ -27,12 +28,22 @@ async def export_visa_renewal(employee_id: int):
             raise HTTPException(404, "従業員が見つかりません")
         
         employee = dict(emp_row)
-        
+
         # 2. Get Company Data (UNS)
-        # Assuming ID 1 is UNS, or fetch the first one
-        company_row = await conn.fetchrow("SELECT * FROM haken_moto_company LIMIT 1")
-        company = dict(company_row) if company_row else {}
-        
+        try:
+            company_row = await conn.fetchrow("SELECT * FROM haken_moto_company LIMIT 1")
+            if not company_row:
+                raise HTTPException(
+                    status_code=400,
+                    detail="派遣元会社の情報が設定されていません。先に会社情報を登録してください。"
+                )
+            company = dict(company_row)
+        except asyncpg.UndefinedTableError:
+            raise HTTPException(
+                status_code=500,
+                detail="データベースの設定エラー: haken_moto_company テーブルが見つかりません"
+            )
+
         # 3. Get Dispatch Data (Haken Saki) if available
         # This logic can be improved to get the *current* assignment
         dispatch_row = await conn.fetchrow("""
@@ -124,8 +135,19 @@ async def export_visa_coe(employee_id: int):
         employee = dict(emp_row)
 
         # 2. Get Company Data (UNS)
-        company_row = await conn.fetchrow("SELECT * FROM haken_moto_company LIMIT 1")
-        company = dict(company_row) if company_row else {}
+        try:
+            company_row = await conn.fetchrow("SELECT * FROM haken_moto_company LIMIT 1")
+            if not company_row:
+                raise HTTPException(
+                    status_code=400,
+                    detail="派遣元会社の情報が設定されていません。先に会社情報を登録してください。"
+                )
+            company = dict(company_row)
+        except asyncpg.UndefinedTableError:
+            raise HTTPException(
+                status_code=500,
+                detail="データベースの設定エラー: haken_moto_company テーブルが見つかりません"
+            )
 
         # 3. Get Dispatch Data (Haken Saki)
         dispatch_row = await conn.fetchrow(

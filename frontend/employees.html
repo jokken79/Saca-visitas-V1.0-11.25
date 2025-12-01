@@ -182,9 +182,14 @@
                                        class="w-full border rounded-lg px-3 py-2 uppercase" placeholder="VAN MINH">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">漢字氏名</label>
-                                <input type="text" id="name-kanji"
-                                       class="w-full border rounded-lg px-3 py-2" placeholder="グエン　ヴァン　ミン">
+                                <label class="block text-sm font-medium text-slate-600 mb-1">姓 (漢字/カタカナ)</label>
+                                <input type="text" id="family-name-kanji"
+                                       class="w-full border rounded-lg px-3 py-2" placeholder="グエン">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">名 (漢字/カタカナ)</label>
+                                <input type="text" id="given-name-kanji"
+                                       class="w-full border rounded-lg px-3 py-2" placeholder="ヴァン　ミン">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-600 mb-1">国籍 <span class="text-red-500">*</span></label>
@@ -574,7 +579,8 @@
             document.getElementById('employee-id').value = emp.id;
             document.getElementById('family-name').value = emp.family_name || '';
             document.getElementById('given-name').value = emp.given_name || '';
-            document.getElementById('name-kanji').value = (emp.family_name_kanji || '') + ' ' + (emp.given_name_kanji || '');
+            document.getElementById('family-name-kanji').value = emp.family_name_kanji || '';
+            document.getElementById('given-name-kanji').value = emp.given_name_kanji || '';
             document.getElementById('nationality').value = emp.nationality || '';
             document.getElementById('date-of-birth').value = emp.date_of_birth || '';
             document.getElementById('sex').value = emp.sex || '';
@@ -599,6 +605,8 @@
             const data = {
                 family_name: document.getElementById('family-name').value.toUpperCase(),
                 given_name: document.getElementById('given-name').value.toUpperCase(),
+                family_name_kanji: document.getElementById('family-name-kanji').value || null,
+                given_name_kanji: document.getElementById('given-name-kanji').value || null,
                 nationality: document.getElementById('nationality').value,
                 date_of_birth: document.getElementById('date-of-birth').value,
                 sex: document.getElementById('sex').value,
