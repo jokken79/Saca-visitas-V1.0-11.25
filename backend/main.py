@@ -355,9 +355,12 @@ async def delete_employee(id: int):
     """従業員削除 (論理削除)"""
     pool = await get_db_pool()
     async with pool.acquire() as conn:
-        result = await conn.execute("UPDATE employees SET employment_status = 'inactive' WHERE id = $1", id)
-        if result == "UPDATE 0":  # asyncpg execute returns "UPDATE N"
+        # Verificar si existe primero
+        exists = await conn.fetchval("SELECT 1 FROM employees WHERE id = $1", id)
+        if not exists:
             raise HTTPException(404, "従業員が見つかりません")
+
+        await conn.execute("UPDATE employees SET employment_status = 'inactive' WHERE id = $1", id)
         return {"message": "削除しました"}
 
 @app.get("/api/employees/card/{card_number}", tags=["Employees"])
@@ -403,18 +406,6 @@ async def create_dispatch_assignment(assignment: DispatchAssignmentCreate):
 # ============================================================
 # ENDPOINTS - OCR
 # ============================================================
-
-@app.post("/api/haken-saki", tags=["Haken Saki"])
-async def create_haken_saki(haken_saki: HakenSakiCreate):
-    """派遣先を作成"""
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("""
-            INSERT INTO haken_saki_company (company_name)
-            VALUES ($1)
-            RETURNING *
-        """, haken_saki.company_name)
-        return dict(row)
 
 @app.post("/api/ocr/import", tags=["OCR"])
 async def import_ocr(data: OCRData):

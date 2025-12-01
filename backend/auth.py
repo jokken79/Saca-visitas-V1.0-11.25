@@ -19,8 +19,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 horas
 
-# Password hashing - using simple hash for now to avoid bcrypt issues
-# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Pre-generated hashes to avoid runtime issues
 PRE_GENERATED_HASHES = {
@@ -80,17 +80,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """Hash de password"""
-    return PRE_GENERATED_HASHES.get(password, f"hashed_{password}")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verificar password"""
-    # Check against pre-generated hashes first
-    for plain, hashed in PRE_GENERATED_HASHES.items():
-        if plain_password == plain and hashed_password == hashed:
-            return True
-    
-    # Fallback for other passwords
-    return hashed_password == f"hashed_{plain_password}"
+    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Crear token JWT"""
@@ -276,9 +266,35 @@ async def change_password(
     """
     パスワード変更 - Change password
     """
-    # Aquí verificarías el password actual en la DB
-    # y actualizarías con el nuevo
-    
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Get current user from database
+        user = await conn.fetchrow(
+            "SELECT * FROM users WHERE id = $1",
+            current_user.user_id
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ユーザーが見つかりません"
+            )
+
+        # Verify current password
+        if not verify_password(password_data.current_password, user["password_hash"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="現在のパスワードが正しくありません"
+            )
+
+        # Hash new password and update
+        new_password_hash = get_password_hash(password_data.new_password)
+        await conn.execute(
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
+            new_password_hash,
+            current_user.user_id
+        )
+
     return {
         "message": "パスワードが変更されました"
     }
@@ -293,12 +309,57 @@ async def create_user(user: UserCreate):
     ユーザー作成 - Create user (Admin only)
     """
     hashed_password = get_password_hash(user.password)
-    
-    # Aquí insertarías en la base de datos
-    
+
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Check if username already exists
+        existing_user = await conn.fetchrow(
+            "SELECT id FROM users WHERE username = $1",
+            user.username
+        )
+
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ユーザー名は既に使用されています"
+            )
+
+        # Check if email already exists
+        existing_email = await conn.fetchrow(
+            "SELECT id FROM users WHERE email = $1",
+            user.email
+        )
+
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="メールアドレスは既に使用されています"
+            )
+
+        # Insert new user
+        new_user = await conn.fetchrow(
+            """
+            INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+            VALUES ($1, $2, $3, $4, $5, true)
+            RETURNING id, username, email, full_name, role, is_active, created_at
+            """,
+            user.username,
+            user.email,
+            hashed_password,
+            user.full_name,
+            user.role
+        )
+
     return {
         "message": "ユーザーが作成されました",
-        "username": user.username
+        "user": {
+            "id": new_user["id"],
+            "username": new_user["username"],
+            "email": new_user["email"],
+            "full_name": new_user["full_name"],
+            "role": new_user["role"],
+            "is_active": new_user["is_active"]
+        }
     }
 
 @router.get("/users", dependencies=[Depends(require_role(["admin"]))])
@@ -306,22 +367,63 @@ async def list_users():
     """
     ユーザー一覧 - List users (Admin only)
     """
-    # Aquí consultarías la base de datos
-    
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        users = await conn.fetch(
+            """
+            SELECT id, username, email, full_name, role, is_active, created_at, last_login
+            FROM users
+            ORDER BY created_at DESC
+            """
+        )
+
     return [
         {
-            "id": 1,
-            "username": "admin",
-            "email": "admin@uns-visa.jp",
-            "full_name": "System Administrator",
-            "role": "admin",
-            "is_active": True
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "role": user["role"],
+            "is_active": user["is_active"],
+            "created_at": user["created_at"].isoformat() if user["created_at"] else None,
+            "last_login": user["last_login"].isoformat() if user["last_login"] else None
         }
+        for user in users
     ]
 
 @router.delete("/users/{user_id}", dependencies=[Depends(require_role(["admin"]))])
-async def delete_user(user_id: int):
+async def delete_user(user_id: int, current_user: TokenData = Depends(get_current_user)):
     """
     ユーザー削除 - Delete user (Admin only)
     """
-    return {"message": f"ユーザー {user_id} が削除されました"}
+    # Prevent self-deletion
+    if user_id == current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="自分自身を削除することはできません"
+        )
+
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        # Check if user exists
+        user = await conn.fetchrow(
+            "SELECT id, username FROM users WHERE id = $1",
+            user_id
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ユーザーが見つかりません"
+            )
+
+        # Soft delete - set is_active to false instead of deleting
+        await conn.execute(
+            "UPDATE users SET is_active = false WHERE id = $1",
+            user_id
+        )
+
+    return {
+        "message": f"ユーザー {user['username']} が削除されました",
+        "user_id": user_id
+    }

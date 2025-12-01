@@ -839,45 +839,6 @@ VALUES (
     'staff', 
     true
 ) ON CONFLICT (username) DO NOTHING;
-INSERT INTO haken_moto_company (
-    company_name, company_name_kana, corporation_number,
-    employment_insurance_number, worker_dispatch_license,
-    postal_code, prefecture, city, address_line1, full_address,
-    telephone, capital, annual_sales, total_employees, foreign_employees,
-    representative_name, representative_title, business_type_code, business_type_name,
-    immigration_category
-) VALUES (
-    '????UNS',
-    '??????????????',
-    '1234567890123',
-    '23456789012',
-    '?23-123456',
-    '480-0000',
-    '???',
-    '????',
-    '???1-2-3',
-    '??????????1-2-3',
-    '0568-00-0000',
-    10000000,
-    100000000,
-    50,
-    30,
-    '?? ??',
-    '?????',
-    '91',
-    '??????',
-    3
-) ON CONFLICT (corporation_number) DO NOTHING;
-
--- Insertar usuario admin
-INSERT INTO users (username, email, password_hash, full_name, role)
-VALUES (
-    'admin',
-    'admin@uns-visa.jp',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.VxrE4vU5xvLFiK', -- password: admin123
-    'System Administrator',
-    'admin'
-) ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- COMENTARIOS
